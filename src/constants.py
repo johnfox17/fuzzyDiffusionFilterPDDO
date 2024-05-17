@@ -5,13 +5,15 @@ L2 = 1
 NX = 512
 NY = 512
 #HORIZON = 3.015
-HORIZON = 1.42
+HORIZON = 2.015
 q = 2
 Dn = 2**8-1
 FINALTIME = 100
 DELTAT = 0.01
 LAMBDA = 0.25
 THRESHOLD = 0.02
+KERNELDIM2 = 7
+GMASK = np.ones((KERNELDIM2, KERNELDIM2))
 GXMASK = np.array([[1,1,1],[0,0,0],[1,1,1]])
 GYMASK = np.array([[1,0,1],[1,0,1],[1,0,1]])
 
@@ -29,5 +31,6 @@ D_4 = np.loadtxt('../data/simData/D_4.csv', delimiter=",")
 D_5 = np.loadtxt('../data/simData/D_5.csv', delimiter=",")
 D_6 = np.loadtxt('../data/simData/D_6.csv', delimiter=",")
 
+G = np.loadtxt('../data/simData/gGradient.csv', delimiter=",")
 GCENTER = [-255,-212.5,-170,-127.5,-85,-42.5,0,42.5,85,127.5,170,212.5,255]
 #.flatten().astype(int)

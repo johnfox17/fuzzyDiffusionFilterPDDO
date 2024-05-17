@@ -1,12 +1,24 @@
 clear all;
 close all;
 
-addpath('../data/output/threshold_0.01')
+addpath('../data/output/')
 lena = imread('../data/simData/Lena.png');
 lena = rgb2gray(lena);
 
 figure; imagesc(lena)
 colormap gray
+
+fuzzyMembershipImage = table2array(readtable("fuzzyMembershipImage.csv"));
+figure; 
+imagesc(fuzzyMembershipImage)
+colormap gray
+
+
+
+
+
+
+
 
 denoisedImage0 = table2array(readtable("denoisedImage0.csv"));
 figure; imagesc(denoisedImage0)
@@ -68,6 +80,9 @@ figure; imagesc(localSmoothness1)
 colormap gray;
 title('localSmoothness1')
 figure; surf(localSmoothness1)
+
+
+
 
 
 

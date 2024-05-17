@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-import fuzzyDiffusionFilter
+import fuzzyDiffusionFilterPDDO
 
 
 def main():
@@ -23,7 +23,7 @@ def main():
     image = cv2.imread(pathToLena)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
-    fuzzyFilter = fuzzyDiffusionFilter.fuzzyDiffusionFilter(image,pathToMembershipFunction)
+    fuzzyFilter = fuzzyDiffusionFilterPDDO.fuzzyDiffusionFilterPDDO(image,pathToMembershipFunction)
     fuzzyFilter.solve()
 
 
