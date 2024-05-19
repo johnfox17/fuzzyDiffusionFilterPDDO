@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.neighbors import KDTree
 
 class fuzzyDiffusionFilterPDDO:
-    def __init__(self, image, pathToMembershipFunction):
+    def __init__(self, image, pathToMembershipFunction, threshold):
         self.image = image
         self.pathToMembershipFunction = pathToMembershipFunction 
         self.l1 = constants.L1
@@ -20,8 +20,10 @@ class fuzzyDiffusionFilterPDDO:
         self.lambd = constants.LAMBDA
         self.GMask = constants.GMASK
         self.gCenter = constants.GCENTER
-        self.threshold = constants.THRESHOLD
+        self.threshold = threshold
         self.g = constants.G
+        self.dindexoffset = constants.DINDEXOFFSET
+        self.kerneldim = constants.KERNELDIM
 
     def createPDDOKernelMesh(self):
         indexing = 'xy'
@@ -82,69 +84,46 @@ class fuzzyDiffusionFilterPDDO:
         D = []
         for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
             for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
-                D.append(np.multiply(self.g,self.fuzzyMembershipImage[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]))
-        self.D = D
+                D.append(np.sum(np.multiply(self.GMask,self.fuzzyMembershipImage[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).flatten()).astype(int))
+        self.D = np.pad(np.array(D).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric')
 
     def calculateGradient(self):
-        gX = []
-        gY = []
-        for iCol in range(1,self.Nx-1):
-            for iRow in range(1,self.Ny-1):
-                Dx = np.multiply(self.GxMask,self.Dx[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int)
-                Dy = np.multiply(self.GyMask,self.Dy[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int)
-                Lx = np.multiply(self.GxMask,self.image[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int)
-                #Lx[Lx>255] = 255
-                Ly = np.multiply(self.GyMask,self.image[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int)
-                #Ly[Ly>255] = 255
-
-                muPremX = self.membershipFunction[int(Lx[2][2])][1]+self.membershipFunction[int(Lx[2][1])][1]+self.membershipFunction[int(Lx[2][0])][1]+self.membershipFunction[int(Lx[0][2])][1]+self.membershipFunction[int(Lx[0][1])][1]+self.membershipFunction[int(Lx[0][0])][1]
-                muPremY = self.membershipFunction[Lx[2][2]][1]+self.membershipFunction[Lx[1][2]][1]+self.membershipFunction[Lx[0][2]][1]+self.membershipFunction[Lx[2][0]][1]+self.membershipFunction[Lx[1][0]][1]+self.membershipFunction[Lx[0][0]][1]
-                gX.append((self.gCenter[int(Dx[2][2])+6]*self.membershipFunction[Lx[2][2]][1]+\
-                        self.gCenter[int(Dx[2][1])+6]*self.membershipFunction[Lx[2][1]][1]+\
-                        self.gCenter[int(Dx[2][0])+6]*self.membershipFunction[Lx[2][0]][1]+\
-                        self.gCenter[int(Dx[0][2])+6]*self.membershipFunction[Lx[0][2]][1]+\
-                        self.gCenter[int(Dx[0][1])+6]*self.membershipFunction[Lx[0][1]][1]+\
-                        self.gCenter[int(Dx[0][0])+6]*self.membershipFunction[Lx[0][0]][1])/muPremX)
-
-                gY.append((self.gCenter[int(Dy[2][2])+6]*self.membershipFunction[Lx[2][2]][1]+\
-                        self.gCenter[int(Dy[1][2])+6]*self.membershipFunction[Lx[1][2]][1]+\
-                        self.gCenter[int(Dy[0][2])+6]*self.membershipFunction[Lx[0][2]][1]+\
-                        self.gCenter[int(Dy[2][0])+6]*self.membershipFunction[Lx[2][0]][1]+\
-                        self.gCenter[int(Dy[1][0])+6]*self.membershipFunction[Lx[1][0]][1]+\
-                        self.gCenter[int(Dy[0][0])+6]*self.membershipFunction[Lx[0][0]][1])/muPremY)
-        self.gX = np.array(gX)
-        self.gY = np.array(gY)
-        self.g = self.gX+self.gY
-    
+        gradient = []
+        for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
+            for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
+                D = np.multiply(self.GMask,self.D[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int).flatten()
+                L = np.multiply(self.GMask,self.image[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int).flatten()
+                muPrem = np.sum(self.membershipFunction[L,1])
+                gradient.append(np.sum(np.multiply(self.g,(np.multiply(self.gCenter[D].reshape((self.kerneldim,self.kerneldim)), self.membershipFunction[L,1].reshape((self.kerneldim,self.kerneldim))))/muPrem).flatten()))
+        self.gradient = np.array(gradient)
 
     def createSimilarityMatrices(self):
         similarityMatrices = []
-        for iCol in range(1,self.Nx-1):
-            for iRow in range(1,self.Ny-1):
-                similarityMatrices.append(np.exp(-np.power(np.absolute(np.multiply(self.GxMask,self.image[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1])-self.image[iRow,iCol]),self.q)/self.Dn))
+        for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
+            for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
+                similarityMatrices.append(np.exp(-np.power(np.absolute(np.multiply(self.GMask,self.image[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1])-self.image[iRow,iCol]),self.q)/self.Dn))
         similarityMatrices = np.array(similarityMatrices)
         similarityMatrices[similarityMatrices<1e-9] = 0
-        self.similarityMatrices = similarityMatrices
+        self.similarityMatrices = np.array(similarityMatrices)
 
     def solveRHS(self):
-        g = np.pad(self.g.reshape((self.Nx-2,self.Ny-2)) ,int(self.horizon),mode='symmetric')
+        gradient = np.pad(self.gradient.reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric')
         localSmoothness = np.pad(self.localSmoothness ,int(self.horizon),mode='symmetric')
         RHS = []
-        for iCol in range(1,self.Nx-1):
-            for iRow in range(1,self.Ny-1):
-                RHS.append(np.sum(np.multiply(np.multiply(self.GxMask, localSmoothness[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]),np.multiply(self.GxMask,g[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]))))
-        self.RHS = np.transpose(np.array(RHS).reshape((self.Nx-2,self.Ny-2)))
-
-    
+        for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
+            for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
+                RHS.append(np.sum(np.multiply(np.multiply(self.GMask, localSmoothness[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]),np.multiply(self.GMask,gradient[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]))))
+        self.RHS = np.transpose(np.array(RHS).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))))
+ 
 
     def calculateLocalAndGeneralSmoothness(self):
         localSmoothness = []
         generalAverage = []
-        for currentSimilarityMatrix in range((self.Nx-2)*(self.Ny-2)):
-            localSmoothness.append((np.sum(self.similarityMatrices[currentSimilarityMatrix])-1)/(len(self.similarityMatrices[currentSimilarityMatrix])-1))
+        for currentSimilarityMatrix in range((self.Nx-int(2*self.horizon))*(self.Ny-int(2*self.horizon))):
+            localSmoothness.append((np.sum(self.similarityMatrices[currentSimilarityMatrix].flatten())-1)/(len(self.similarityMatrices[currentSimilarityMatrix].flatten())-1))
             generalAverage.append(np.average(self.similarityMatrices[currentSimilarityMatrix]))
-        self.localSmoothness = np.transpose(np.array(localSmoothness).reshape((self.Nx-2),(self.Ny-2)))
-        self.generalAverage = np.array(generalAverage).reshape((self.Nx-2),(self.Ny-2))
+        self.localSmoothness = np.transpose(np.array(localSmoothness).reshape((self.Nx-int(2*self.horizon)),(self.Ny-int(2*self.horizon))))
+        self.generalAverage = np.array(generalAverage).reshape((self.Nx-int(2*self.horizon)),(self.Ny-int(2*self.horizon)))
 
     def thresholdLocalSmoothness(self):
         localSmoothness = np.array(self.localSmoothness)
@@ -171,8 +150,6 @@ class fuzzyDiffusionFilterPDDO:
             self.assignMembership()
             self.createFuzzyMembershipImage()
             self.findFuzzyDerivativeRule()
-            np.savetxt('../data/output/D.csv',  self.D, delimiter=",")
-            a = input('').split(" ")[0]
             self.calculateGradient() 
             self.createSimilarityMatrices()
             self.calculateLocalAndGeneralSmoothness()
@@ -182,7 +159,7 @@ class fuzzyDiffusionFilterPDDO:
             self.checkSaturation()
 
             np.savetxt('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'.csv',  self.image, delimiter=",")
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/g'+str(iTimeStep)+'.csv',  self.g, delimiter=",")
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'.csv',  self.gradient, delimiter=",")
             np.savetxt('../data/output/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'.csv',  self.localSmoothness, delimiter=",")
             np.savetxt('../data/output/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'.csv',  self.RHS, delimiter=",")
         self.denoisedImage = noisyImage
