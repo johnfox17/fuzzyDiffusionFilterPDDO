@@ -84,17 +84,33 @@ class fuzzyDiffusionFilterPDDO:
         D = []
         for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
             for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
-                D.append(np.sum(np.multiply(self.GMask,self.fuzzyMembershipImage[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).flatten()).astype(int))
-        self.D = np.pad(np.array(D).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric')
+                D.append(np.sum(np.multiply(self.g,self.fuzzyMembershipImage[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).flatten()).astype(int))
+        D = np.array(D)
+        while np.max(np.absolute(D))>256:
+            D = np.divide(D,2)
+        self.D = np.pad(D.reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric') 
+        #np.savetxt('../data/output/DerivativeRule2.csv',  self.D, delimiter=",")
+        #print('Here')
+        #a = input('').split(" ")[0]
 
     def calculateGradient(self):
         gradient = []
+        #print(self.g)
+        #print(self.GMask)
         for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
             for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
                 D = np.multiply(self.GMask,self.D[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int).flatten()
                 L = np.multiply(self.GMask,self.image[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int).flatten()
                 muPrem = np.sum(self.membershipFunction[L,1])
-                gradient.append(np.sum(np.multiply(self.g,(np.multiply(self.gCenter[D].reshape((self.kerneldim,self.kerneldim)), self.membershipFunction[L,1].reshape((self.kerneldim,self.kerneldim))))/muPrem).flatten()))
+                gCents = []
+                for iD in D:
+                    #print(iD)
+                    gCents.append(self.gCenter[np.abs(self.gCenter-iD).argmin()])
+                    #a = input('').split(" ")[0]
+                gCents = np.array(gCents).reshape((self.kerneldim,self.kerneldim))
+                gradient.append(np.sum(np.multiply(self.GMask,(np.multiply(gCents, self.membershipFunction[L,1].reshape((self.kerneldim,self.kerneldim))))/muPrem).flatten()))
+        while np.max(np.absolute(gradient))>256:
+            gradient = np.divide(gradient,2)
         self.gradient = np.array(gradient)
 
     def createSimilarityMatrices(self):
@@ -113,6 +129,8 @@ class fuzzyDiffusionFilterPDDO:
         for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
             for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
                 RHS.append(np.sum(np.multiply(np.multiply(self.GMask, localSmoothness[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]),np.multiply(self.GMask,gradient[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]))))
+        while np.max(np.absolute(RHS))>256:
+            RHS = np.divide(RHS,2)
         self.RHS = np.transpose(np.array(RHS).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))))
  
 
@@ -127,8 +145,8 @@ class fuzzyDiffusionFilterPDDO:
 
     def thresholdLocalSmoothness(self):
         localSmoothness = np.array(self.localSmoothness)
-        localSmoothness[localSmoothness<self.threshold] = 1
-        localSmoothness[localSmoothness != 1] = 0
+        localSmoothness[localSmoothness>self.threshold] = 0
+        #localSmoothness[localSmoothness != 1] = 0
         self.localSmoothness = localSmoothness
 
     def checkSaturation(self):       
@@ -139,6 +157,12 @@ class fuzzyDiffusionFilterPDDO:
         self.Nx = self.Nx - 2*int(self.horizon)
         self.Ny = self.Ny - 2*int(self.horizon)
         self.image = denoisedImage.reshape((self.Nx, self.Ny))
+
+    
+    def normalizeTo8Bits(self):
+        image = self.image.flatten()
+        image = np.multiply(np.divide(image,np.max(np.absolute(image))),255)
+        self.image = image.reshape((self.Nx, self.Ny))
 
     def timeIntegrate(self):
         timeSteps = int(self.finalTime/self.dt)
@@ -157,11 +181,12 @@ class fuzzyDiffusionFilterPDDO:
             self.solveRHS() 
             self.denoisedImage = noisyImage + self.dt*self.lambd*self.RHS
             self.checkSaturation()
+            self.normalizeTo8Bits()
 
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'.csv',  self.image, delimiter=",")
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'.csv',  self.gradient, delimiter=",")
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'.csv',  self.localSmoothness, delimiter=",")
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'.csv',  self.RHS, delimiter=",")
+            np.savetxt('../data/output3/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'.csv',  self.image, delimiter=",")
+            np.savetxt('../data/output3/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'.csv',  self.gradient, delimiter=",")
+            np.savetxt('../data/output3/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'.csv',  self.localSmoothness, delimiter=",")
+            np.savetxt('../data/output3/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'.csv',  self.RHS, delimiter=",")
         self.denoisedImage = noisyImage
 
     def solve(self):

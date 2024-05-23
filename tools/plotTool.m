@@ -1,86 +1,83 @@
 clear all;
-close all;
+% close all;
 
-addpath('../data/output/')
+addpath('../data/simData/')
+
 lena = imread('../data/simData/Lena.png');
 lena = rgb2gray(lena);
-
 figure; imagesc(lena)
 colormap gray
 
-fuzzyMembershipImage = table2array(readtable("fuzzyMembershipImage.csv"));
-figure; 
-imagesc(fuzzyMembershipImage)
+noisyLena = imread('../data/simData/noisyLena.png');
+figure; imagesc(noisyLena)
 colormap gray
 
 
-
-
-
-
-
-
-denoisedImage0 = table2array(readtable("denoisedImage0.csv"));
-figure; imagesc(denoisedImage0)
-title('denoisedImage0')
-colormap gray;
-colorbar
-figure; surf(denoisedImage0)
+% DerivativeRule = table2array(readtable("../data/output/DerivativeRule.csv"));
+% figure; 
+% imagesc(DerivativeRule.')
+% colormap gray
+% colorbar
+% figure;
+% histogram(DerivativeRule)
 % 
-% g0 = table2array(readtable("g0.csv"));
-% g0 = reshape(g0, [512 512]).';
-% figure; imagesc(g0)
-% title('g0')
-% colormap gray;
-% figure; surf(g0)
-% 
-% 
-% RHS0 = table2array(readtable("RHS0.csv"));
-% figure; imagesc(RHS0)
-% title('RHS0')
-% colormap gray;
-% figure; surf(RHS0)
-% 
-% 
-% localSmoothness0 = table2array(readtable("localSmoothness0.csv"));
-% figure; imagesc(localSmoothness0)
-% colormap gray;
-% title('localSmoothness0')
-% figure; surf(localSmoothness0)
+% DerivativeRule2 = table2array(readtable("../data/output/DerivativeRule2.csv"));
+% figure; 
+% imagesc(DerivativeRule2.')
+% colormap gray
+% colorbar
+% figure;
+% histogram(DerivativeRule2)
+%THRESHOLDS = [0.01, 0.1, 0.2, 0.3, 0.35, 0.4, 0.5];
 
 
-numInteration = "150";
-denoisedImage1 = table2array(readtable("denoisedImage"+numInteration+".csv"));
-% denoisedImage1(denoisedImage1>=210) = 210;
-% denoisedImage1(denoisedImage1<=-210) = -210;
-%denoisedImage1 = movmean(denoisedImage1, 5);
-figure; imagesc(denoisedImage1)
-colormap gray;
-colorbar
-title('denoisedImage1')
-figure; surf(denoisedImage1)
-
-g1 = table2array(readtable("g"+ numInteration +".csv"));
-g1 = reshape(g1, [512 512]).';
-figure; imagesc(g1)
-colormap gray;
-title('g1')
-figure; surf(g1)
 
 
-RHS1 = table2array(readtable("RHS"+ numInteration +".csv"));
-figure; imagesc(RHS1)
-colormap gray;
-title('RHS1')
-figure; surf(RHS1)
-
-
-localSmoothness1 = table2array(readtable("localSmoothness" + numInteration +".csv"));
-figure; imagesc(localSmoothness1)
-colormap gray;
-title('localSmoothness1')
-figure; surf(localSmoothness1)
-
+THRESHOLDS = 0.01;
+%timeSteps = ["0","10","50","100","150","200","300"];
+timeSteps = ["102"];
+for iThreshold = 1:length(THRESHOLDS)
+    pathFolder = "../data/output3/threshold_"+string(THRESHOLDS(iThreshold))+"/";
+    %pathFolder = "../data/output/threshold_"+string(THRESHOLDS(iThreshold))+"/";
+    for iTimeStep = 1:length(timeSteps)
+        denoisedImage = table2array(readtable(pathFolder+"denoisedImage"+timeSteps(iTimeStep)+".csv"));
+        gradient = table2array(readtable(pathFolder+"gradient"+timeSteps(iTimeStep)+".csv"));
+        gradient = reshape(gradient, [512 512]).';
+        RHS = table2array(readtable(pathFolder+"RHS"+timeSteps(iTimeStep)+".csv"));
+        localSmoothness = table2array(readtable(pathFolder+"localSmoothness"+timeSteps(iTimeStep)+".csv"));
+        
+        figure;
+        tiledlayout(2,2);
+    
+        ax1 = nexttile;
+        imagesc(denoisedImage)
+        colormap gray
+        colorbar
+        title("Lena")
+    
+        ax2 = nexttile;
+        imagesc(gradient)
+        title('Gradient ')
+        colormap gray;
+        colorbar
+    
+        ax3 = nexttile;
+        imagesc(RHS)
+        title('Right Hand Side')
+        colormap gray;
+        colorbar
+        
+        ax4 = nexttile;
+        imagesc(localSmoothness)
+        title('Local Smoothness')
+        colormap gray;
+        colorbar
+        
+        linkaxes([ax1 ax2 ax3 ax4])
+        figure;
+        surf(denoisedImage)
+    end
+end
 
 
 
