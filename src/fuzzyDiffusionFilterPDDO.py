@@ -166,7 +166,7 @@ class fuzzyDiffusionFilterPDDO:
 
     def timeIntegrate(self):
         timeSteps = int(self.finalTime/self.dt)
-        timeSteps = 300
+        timeSteps = 1000
         for iTimeStep in range(timeSteps+1):
             print(iTimeStep)
             noisyImage = self.image
@@ -183,10 +183,10 @@ class fuzzyDiffusionFilterPDDO:
             self.checkSaturation()
             self.normalizeTo8Bits()
 
-            np.savetxt('../data/output3/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'.csv',  self.image, delimiter=",")
-            np.savetxt('../data/output3/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'.csv',  self.gradient, delimiter=",")
-            np.savetxt('../data/output3/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'.csv',  self.localSmoothness, delimiter=",")
-            np.savetxt('../data/output3/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'.csv',  self.RHS, delimiter=",")
+            np.savetxt('../data/output4/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'.csv',  self.image, delimiter=",")
+            np.savetxt('../data/output4/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'.csv',  self.gradient, delimiter=",")
+            np.savetxt('../data/output4/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'.csv',  self.localSmoothness, delimiter=",")
+            np.savetxt('../data/output4/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'.csv',  self.RHS, delimiter=",")
         self.denoisedImage = noisyImage
 
     def solve(self):

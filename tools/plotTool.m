@@ -33,11 +33,11 @@ colormap gray
 
 
 
-THRESHOLDS = 0.01;
+THRESHOLDS = 0.2;
 %timeSteps = ["0","10","50","100","150","200","300"];
-timeSteps = ["102"];
+timeSteps = ["641"];
 for iThreshold = 1:length(THRESHOLDS)
-    pathFolder = "../data/output3/threshold_"+string(THRESHOLDS(iThreshold))+"/";
+    pathFolder = "../data/output4/threshold_"+string(THRESHOLDS(iThreshold))+"/";
     %pathFolder = "../data/output/threshold_"+string(THRESHOLDS(iThreshold))+"/";
     for iTimeStep = 1:length(timeSteps)
         denoisedImage = table2array(readtable(pathFolder+"denoisedImage"+timeSteps(iTimeStep)+".csv"));
