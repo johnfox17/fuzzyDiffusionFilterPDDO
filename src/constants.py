@@ -4,6 +4,7 @@ L1 = 1
 L2 = 1
 NX = 512
 NY = 512
+NUMCHANNELS = 3
 #HORIZON = 3.015
 HORIZON = 2.015
 q = 2

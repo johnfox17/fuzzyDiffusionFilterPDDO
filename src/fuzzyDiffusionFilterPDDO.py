@@ -5,6 +5,7 @@ from sklearn.neighbors import KDTree
 class fuzzyDiffusionFilterPDDO:
     def __init__(self, image, pathToMembershipFunction, threshold):
         self.image = image
+        self.numChannels = constants.NUMCHANNELS
         self.pathToMembershipFunction = pathToMembershipFunction 
         self.l1 = constants.L1
         self.l2 = constants.L2
@@ -40,9 +41,12 @@ class fuzzyDiffusionFilterPDDO:
         self.neighboringPixels = neighboringPixels.reshape((self.Nx,self.Ny))
     
     def addBoundary(self):
-        self.image = np.pad(self.image,int(self.horizon),mode='symmetric')
         self.Nx = self.Nx + 2*int(self.horizon)
         self.Ny = self.Ny + 2*int(self.horizon)
+        image = np.zeros((self.Nx, self.Ny, self.numChannels))
+        for iChan in range(self.numChannels):
+            image[:,:,iChan] = np.pad(self.image[:,:,iChan],int(self.horizon),mode='symmetric')
+        self.image = image
 
     def loadMembershipFunction(self):
         self.membershipFunction = np.loadtxt(self.pathToMembershipFunction, delimiter=",")
@@ -64,62 +68,72 @@ class fuzzyDiffusionFilterPDDO:
 
     def assignMembership(self):
         pixelMemberships = []
-        for iCol in range(self.Nx):
-            for iRow in range(self.Ny):
-                currentPixelMembership = []
-                currentPixelMembership.append(self.image[iCol,iRow])
-                membershipIndex = int(self.image[iCol,iRow])
-                currentPixelMembership.append(list(self.membershipFunction[membershipIndex])[0])
-                currentPixelMembership.append(list(self.membershipFunction[membershipIndex])[1])
-                pixelMemberships.append(currentPixelMembership)
+        for iChan in range(self.numChannels):
+            pixelMembershipsChan = []
+            for iCol in range(self.Nx):
+                for iRow in range(self.Ny):
+                    currentPixelMembership = []
+                    currentPixelMembership.append(self.image[iCol,iRow,iChan])
+                    membershipIndex = int(self.image[iCol,iRow,iChan])
+                    currentPixelMembership.append(list(self.membershipFunction[membershipIndex])[0])
+                    currentPixelMembership.append(list(self.membershipFunction[membershipIndex])[1])
+                    pixelMembershipsChan.append(currentPixelMembership)
+            pixelMemberships.append(pixelMembershipsChan)
         self.pixelMemberships = pixelMemberships
 
     def createFuzzyMembershipImage(self):
         fuzzyMembershipImage = []
-        for iPixel in range(self.Nx*self.Ny):
-            fuzzyMembershipImage.append(self.pixelMemberships[iPixel][1])
-        self.fuzzyMembershipImage = np.array(fuzzyMembershipImage).reshape((self.Nx,self.Ny))
+        for iChan in range(self.numChannels):
+            fuzzyMembershipChannel = []
+            for iPixel in range(self.Nx*self.Ny):
+                fuzzyMembershipChannel.append(self.pixelMemberships[iChan][iPixel][1])
+            fuzzyMembershipImage.append(np.array(fuzzyMembershipChannel).reshape((self.Nx,self.Ny)))
+        self.fuzzyMembershipImage = np.array(fuzzyMembershipImage)
 
     def findFuzzyDerivativeRule(self):
         D = []
-        for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
-            for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
-                D.append(np.sum(np.multiply(self.g,self.fuzzyMembershipImage[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).flatten()).astype(int))
-        D = np.array(D)
-        while np.max(np.absolute(D))>255:
-            D = np.divide(D,2)
-        self.D = np.pad(D.reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric') 
-        #np.savetxt('../data/output/DerivativeRule2.csv',  self.D, delimiter=",")
-        #print('Here')
-        #a = input('').split(" ")[0]
+        for iChan in range(self.numChannels):
+            DChannel = []
+            for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
+                for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
+                    DChannel.append(np.sum(np.multiply(self.g,self.fuzzyMembershipImage[iChan, iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).flatten()).astype(int))
+            D.append(np.pad(np.array(DChannel).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric'))
+        for iChan in range(self.numChannels):
+            while np.max(np.absolute(D[iChan]))>255:
+                D[iChan] = np.divide(D[iChan],2)
+        self.D = D
 
     def calculateGradient(self):
         gradient = []
-        #print(self.g)
-        #print(self.GMask)
-        for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
-            for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
-                D = np.multiply(self.GMask,self.D[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int).flatten()
-                L = np.multiply(self.GMask,self.image[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int).flatten()
-                muPrem = np.sum(self.membershipFunction[L,1])
-                gCents = []
-                for iD in D:
-                    #print(iD)
-                    gCents.append(self.gCenter[np.abs(self.gCenter-iD).argmin()])
-                    #a = input('').split(" ")[0]
-                gCents = np.array(gCents).reshape((self.kerneldim,self.kerneldim))
-                gradient.append(np.sum(np.multiply(self.GMask,(np.multiply(gCents, self.membershipFunction[L,1].reshape((self.kerneldim,self.kerneldim))))/muPrem).flatten()))
-        while np.max(np.absolute(gradient))>255:
-            gradient = np.divide(gradient,2)
+        for iChan in range(self.numChannels):
+            gradientChannel = []
+            for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
+                for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
+                    D = np.multiply(self.GMask,self.D[iChan][iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int).flatten()
+                    L = np.multiply(self.GMask,self.image[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1, iChan]).astype(int).flatten()
+                    muPrem = np.sum(self.membershipFunction[L,1])
+                    gCents = []
+                    for iD in D:
+                        gCents.append(self.gCenter[np.abs(self.gCenter-iD).argmin()])
+                    gCents = np.array(gCents).reshape((self.kerneldim,self.kerneldim))
+                    gradientChannel.append(np.sum(np.multiply(self.GMask,(np.multiply(gCents, self.membershipFunction[L,1].reshape((self.kerneldim,self.kerneldim))))/muPrem).flatten()))
+            gradient.append(gradientChannel)
+        
+        for iChan in range(self.numChannels):
+            while np.max(np.absolute(gradient[iChan]))>255:
+                gradient[iChan] = np.divide(gradient[iChan],2)
         self.gradient = np.array(gradient)
 
     def createSimilarityMatrices(self):
         similarityMatrices = []
-        for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
-            for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
-                similarityMatrices.append(np.exp(-np.power(np.absolute(np.multiply(self.GMask,self.image[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1])-self.image[iRow,iCol]),self.q)/self.Dn))
-        similarityMatrices = np.array(similarityMatrices)
-        similarityMatrices[similarityMatrices<1e-9] = 0
+        for iChan in range(self.numChannels):
+            similarityMatricesChannel = []
+            for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
+                for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
+                    similarityMatricesChannel.append(np.exp(-np.power(np.absolute(np.multiply(self.GMask,self.image[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1, iChan])-self.image[iRow,iCol,iChan]),self.q)/self.Dn))
+            similarityMatricesChannel = np.array(similarityMatricesChannel)
+            similarityMatricesChannel[similarityMatricesChannel<1e-9] = 0
+            similarityMatrices.append(similarityMatricesChannel) 
         self.similarityMatrices = np.array(similarityMatrices)
 
     def solveRHS(self):
@@ -131,6 +145,9 @@ class fuzzyDiffusionFilterPDDO:
                 RHS.append(np.sum(np.multiply(np.multiply(self.GMask, localSmoothness[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]),np.multiply(self.GMask,gradient[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]))))
         while np.max(np.absolute(RHS))>255:
             RHS = np.divide(RHS,2)
+        print(np.shape(self.similarityMatrices))
+        print('Here')
+        a = input('').split(" ")[0]
         self.RHS = np.transpose(np.array(RHS).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))))
  
 
@@ -167,6 +184,7 @@ class fuzzyDiffusionFilterPDDO:
     def timeIntegrate(self):
         timeSteps = int(self.finalTime/self.dt)
         timeSteps = 1500
+        
         for iTimeStep in range(timeSteps+1):
             print(iTimeStep)
             noisyImage = self.image
@@ -174,8 +192,13 @@ class fuzzyDiffusionFilterPDDO:
             self.assignMembership()
             self.createFuzzyMembershipImage()
             self.findFuzzyDerivativeRule()
-            self.calculateGradient() 
+            self.calculateGradient()
             self.createSimilarityMatrices()
+            np.savetxt('../data/output/gradient0.csv',  self.gradient[0], delimiter=",")
+            np.savetxt('../data/output/gradient1.csv',  self.gradient[1], delimiter=",")
+            np.savetxt('../data/output/gradient2.csv',  self.gradient[2], delimiter=",")
+            print('Here')
+            a = input('').split(" ")[0]
             self.calculateLocalAndGeneralSmoothness()
             self.thresholdLocalSmoothness()
             self.solveRHS() 

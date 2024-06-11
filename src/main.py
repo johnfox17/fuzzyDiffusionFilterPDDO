@@ -6,23 +6,29 @@ import fuzzyDiffusionFilterPDDO
 import constants
 
 def main():
-    
+    convertToGrayScale = False
     for iThreshold in constants.THRESHOLDS:
         if sys.platform.startswith('linux'):
             pathToLena = \
                 '../data/simData/noisyLena.png'
+                #'../data/simData/noisyCircle'
+                #'../data/simData/noisyLena.png'
                 # '../data/simData/Lena.png'
             pathToMembershipFunction = '../data/simData/triangularMembershipFunction.csv'
 
         else:
             pathToLena = \
                 '..\\data\\simData\\noisyLena.png'
+                #'..\\data\\simData\\noisyCircle.png'
+                #'..\\data\\simData\\noisyLena.png'
                 #'..\\data\\simData\\Lena.png'
             pathToMembershipFunction = '..\\data\\simData\\triangularMembershipFunction.csv'
 
         image = cv2.imread(pathToLena)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    
+        
+        if convertToGrayScale:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
         fuzzyFilter = fuzzyDiffusionFilterPDDO.fuzzyDiffusionFilterPDDO(image,pathToMembershipFunction,iThreshold)
         fuzzyFilter.solve()
 
