@@ -136,6 +136,29 @@ class fuzzyDiffusionFilterPDDO:
             similarityMatrices.append(similarityMatricesChannel) 
         self.similarityMatrices = np.array(similarityMatrices)
 
+    def calculateLocalAndGeneralSmoothness(self):
+        localSmoothness = []
+        generalAverage = []
+        for iChan in range(self.numChannels):
+            localSmoothnessChannel = []
+            generalAverageChannel = []
+            for currentSimilarityMatrix in range((self.Nx-int(2*self.horizon))*(self.Ny-int(2*self.horizon))):
+                localSmoothnessChannel.append((np.sum(self.similarityMatrices[iChan][currentSimilarityMatrix].flatten())-1)/(len(self.similarityMatrices[iChan][currentSimilarityMatrix].flatten())-1))
+                generalAverageChannel.append(np.average(self.similarityMatrices[iChan][currentSimilarityMatrix]))
+            localSmoothness.append(np.transpose(np.array(localSmoothnessChannel).reshape((self.Nx-int(2*self.horizon)),(self.Ny-int(2*self.horizon)))))
+            generalAverage.append(np.array(generalAverageChannel).reshape((self.Nx-int(2*self.horizon)),(self.Ny-int(2*self.horizon))))
+        self.localSmoothness = np.array(localSmoothness)
+        self.generalAverage = np.array(generalAverage)
+
+    def thresholdLocalSmoothness(self):
+        localSmoothness = np.array(self.localSmoothness)
+        localSmoothness[localSmoothness>self.threshold] = 0
+        #localSmoothness[localSmoothness != 1] = 0
+        self.localSmoothness = localSmoothness
+        
+        print('Here')
+        a = input('').split(" ")[0]
+
     def solveRHS(self):
         gradient = np.pad(self.gradient.reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric')
         localSmoothness = np.pad(self.localSmoothness ,int(self.horizon),mode='symmetric')
@@ -145,26 +168,7 @@ class fuzzyDiffusionFilterPDDO:
                 RHS.append(np.sum(np.multiply(np.multiply(self.GMask, localSmoothness[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]),np.multiply(self.GMask,gradient[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]))))
         while np.max(np.absolute(RHS))>255:
             RHS = np.divide(RHS,2)
-        print(np.shape(self.similarityMatrices))
-        print('Here')
-        a = input('').split(" ")[0]
-        self.RHS = np.transpose(np.array(RHS).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))))
- 
-
-    def calculateLocalAndGeneralSmoothness(self):
-        localSmoothness = []
-        generalAverage = []
-        for currentSimilarityMatrix in range((self.Nx-int(2*self.horizon))*(self.Ny-int(2*self.horizon))):
-            localSmoothness.append((np.sum(self.similarityMatrices[currentSimilarityMatrix].flatten())-1)/(len(self.similarityMatrices[currentSimilarityMatrix].flatten())-1))
-            generalAverage.append(np.average(self.similarityMatrices[currentSimilarityMatrix]))
-        self.localSmoothness = np.transpose(np.array(localSmoothness).reshape((self.Nx-int(2*self.horizon)),(self.Ny-int(2*self.horizon))))
-        self.generalAverage = np.array(generalAverage).reshape((self.Nx-int(2*self.horizon)),(self.Ny-int(2*self.horizon)))
-
-    def thresholdLocalSmoothness(self):
-        localSmoothness = np.array(self.localSmoothness)
-        localSmoothness[localSmoothness>self.threshold] = 0
-        #localSmoothness[localSmoothness != 1] = 0
-        self.localSmoothness = localSmoothness
+        self.RHS = np.transpose(np.array(RHS).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))))   
 
     def checkSaturation(self):       
         denoisedImage = self.denoisedImage.flatten()
@@ -194,12 +198,12 @@ class fuzzyDiffusionFilterPDDO:
             self.findFuzzyDerivativeRule()
             self.calculateGradient()
             self.createSimilarityMatrices()
-            np.savetxt('../data/output/gradient0.csv',  self.gradient[0], delimiter=",")
-            np.savetxt('../data/output/gradient1.csv',  self.gradient[1], delimiter=",")
-            np.savetxt('../data/output/gradient2.csv',  self.gradient[2], delimiter=",")
+            self.calculateLocalAndGeneralSmoothness()
+            np.savetxt('../data/output/localSmoothness0.csv',  self.localSmoothness[0], delimiter=",")
+            np.savetxt('../data/output/localSmoothness1.csv',  self.localSmoothness[1], delimiter=",")
+            np.savetxt('../data/output/localSmoothness2.csv',  self.localSmoothness[2], delimiter=",")
             print('Here')
             a = input('').split(" ")[0]
-            self.calculateLocalAndGeneralSmoothness()
             self.thresholdLocalSmoothness()
             self.solveRHS() 
             self.denoisedImage = noisyImage + self.dt*self.lambd*self.RHS
