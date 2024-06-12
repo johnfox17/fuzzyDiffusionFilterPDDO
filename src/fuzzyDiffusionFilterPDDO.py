@@ -1,6 +1,7 @@
 import constants
 import numpy as np
 from sklearn.neighbors import KDTree
+from PIL import Image
 
 class fuzzyDiffusionFilterPDDO:
     def __init__(self, image, pathToMembershipFunction, threshold):
@@ -158,35 +159,44 @@ class fuzzyDiffusionFilterPDDO:
         #a = input('').split(" ")[0]
 
     def solveRHS(self):
-        gradient = np.pad(self.gradient.reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric')
-        localSmoothness = np.pad(self.localSmoothness ,int(self.horizon),mode='symmetric')
         RHS = []
-        for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
-            for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
-                RHS.append(np.sum(np.multiply(np.multiply(self.GMask, localSmoothness[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]),np.multiply(self.GMask,gradient[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]))))
-        while np.max(np.absolute(RHS))>255:
-            RHS = np.divide(RHS,2)
-        self.RHS = np.transpose(np.array(RHS).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))))   
+        for iChan in range(self.numChannels):
+            gradientChannel = np.pad(self.gradient[iChan].reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric')
+            localSmoothnessChannel = np.pad(self.localSmoothness[iChan] ,int(self.horizon),mode='symmetric')
+            RHSChannel = []
+            for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
+                for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
+                    RHSChannel.append(np.sum(np.multiply(np.multiply(self.GMask, localSmoothnessChannel[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]),np.multiply(self.GMask,gradientChannel[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]))))
+            while np.max(np.absolute(RHSChannel))>255:
+                RHSChannel = np.divide(RHSChannel,2)
+            RHS.append(np.transpose(np.array(RHSChannel).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon)))))
+        self.RHS = np.array(RHS)   
 
     def checkSaturation(self):       
-        denoisedImage = self.denoisedImage.flatten()
-        while np.max(np.absolute(denoisedImage))>255:
-            denoisedImage = np.divide(denoisedImage,2)
-        
+        image = []
         self.Nx = self.Nx - 2*int(self.horizon)
         self.Ny = self.Ny - 2*int(self.horizon)
-        self.image = denoisedImage.reshape((self.Nx, self.Ny))
-
+        for iChan in range(self.numChannels):
+            denoisedImageChannel = self.denoisedImage[iChan].flatten()
+            while np.max(np.absolute(denoisedImageChannel))>255:
+                denoisedImageChannel = np.divide(denoisedImageChannel,2)
+            image.append(denoisedImageChannel.reshape((self.Nx, self.Ny)))
+        self.image = image
+        
     
     def normalizeTo8Bits(self):
-        image = self.image.flatten()
-        image = np.multiply(np.divide(image,np.max(np.absolute(image))),255)
-        self.image = image.reshape((self.Nx, self.Ny))
+        image = []
+        for iChan in range(self.numChannels):
+            imageChannel = self.image[iChan].flatten()
+            imageChannel = np.multiply(np.divide(imageChannel,np.max(np.absolute(imageChannel))),255)
+            image.append(imageChannel.reshape((self.Nx, self.Ny)))
+        self.image = np.array(image)
 
     def timeIntegrate(self):
         timeSteps = int(self.finalTime/self.dt)
         timeSteps = 1500
         
+        denoisedImage = []
         for iTimeStep in range(timeSteps+1):
             print(iTimeStep)
             noisyImage = self.image
@@ -198,20 +208,36 @@ class fuzzyDiffusionFilterPDDO:
             self.createSimilarityMatrices()
             self.calculateLocalAndGeneralSmoothness()
             self.thresholdLocalSmoothness()
-            np.savetxt('../data/output/localSmoothness0.csv',  self.localSmoothness[0], delimiter=",")
-            np.savetxt('../data/output/localSmoothness1.csv',  self.localSmoothness[1], delimiter=",")
-            np.savetxt('../data/output/localSmoothness2.csv',  self.localSmoothness[2], delimiter=",")
-            print('Here')
-            a = input('').split(" ")[0]
             self.solveRHS() 
-            self.denoisedImage = noisyImage + self.dt*self.lambd*self.RHS
+            for iChan in range(self.numChannels):
+                denoisedImage.append(noisyImage[:,:,iChan] + self.dt*self.lambd*self.RHS[iChan])
+            self.denoisedImage = denoisedImage
+            
             self.checkSaturation()
             self.normalizeTo8Bits()
+            #Image.fromarray(self.image).save("../data/output/threshold_"+str(self.threshold)+"/denoisedImage"+str(iTimeStep)+".jpeg")
+            #Image.fromarray(self.gradient).save("../data/output/threshold_"+str(self.threshold)+"/gradient"+str(iTimeStep)+".jpeg")
+            #Image.fromarray(self.localSmoothness).save("../data/output/threshold_"+str(self.threshold)+"/localSmoothness"+str(iTimeStep)+".jpeg")
+            #Image.fromarray(self.RHS).save("../data/output/threshold_"+str(self.threshold)+"/RHS"+str(iTimeStep)+".jpeg")
+            #a = input('').split(" ")[0]
 
-            np.savetxt('../data/output5/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'.csv',  self.image, delimiter=",")
-            np.savetxt('../data/output5/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'.csv',  self.gradient, delimiter=",")
-            np.savetxt('../data/output5/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'.csv',  self.localSmoothness, delimiter=",")
-            np.savetxt('../data/output5/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'.csv',  self.RHS, delimiter=",")
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'0'+'.csv',  self.image[0], delimiter=",")
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'0'+'.csv',  self.gradient[0], delimiter=",")
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'0'+'.csv',  self.localSmoothness[0], delimiter=",")
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'0'+'.csv',  self.RHS[0], delimiter=",")
+
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'1'+'.csv',  self.image[1], delimiter=",")
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'1'+'.csv',  self.gradient[1], delimiter=",")
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'1'+'.csv',  self.localSmoothness[1], delimiter=",")
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'1'+'.csv',  self.RHS[1], delimiter=",")
+
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'2'+'.csv',  self.image[2], delimiter=",")
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'2'+'.csv',  self.gradient[2], delimiter=",")
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'2'+'.csv',  self.localSmoothness[2], delimiter=",")
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'2'+'.csv',  self.RHS[2], delimiter=",")
+
+            print('Here')
+            a = input('').split(" ")[0]
         self.denoisedImage = noisyImage
 
     def solve(self):
