@@ -151,11 +151,8 @@ class fuzzyDiffusionFilterPDDO:
         self.generalAverage = np.array(generalAverage)
 
     def thresholdLocalSmoothness(self):
-        
         for iChan in range(self.numChannels):
             self.localSmoothness[iChan][self.localSmoothness[iChan]>self.threshold] = 0
-        #localSmoothness[localSmoothness != 1] = 0
-        #self.localSmoothness = localSmoothness
         
         #print('Here')
         #a = input('').split(" ")[0]
