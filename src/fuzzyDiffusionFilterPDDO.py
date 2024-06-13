@@ -190,7 +190,9 @@ class fuzzyDiffusionFilterPDDO:
             imageChannel = self.image[iChan].flatten()
             imageChannel = np.multiply(np.divide(imageChannel,np.max(np.absolute(imageChannel))),255)
             image.append(imageChannel.reshape((self.Nx, self.Ny)))
-        self.image = np.array(image)
+        image = np.swapaxes(np.array(image), 0, 1)
+        image = np.swapaxes(image,1,2)
+        self.image = image
 
     def timeIntegrate(self):
         timeSteps = int(self.finalTime/self.dt)
@@ -215,29 +217,29 @@ class fuzzyDiffusionFilterPDDO:
             
             self.checkSaturation()
             self.normalizeTo8Bits()
-            #Image.fromarray(self.image).save("../data/output/threshold_"+str(self.threshold)+"/denoisedImage"+str(iTimeStep)+".jpeg")
-            #Image.fromarray(self.gradient).save("../data/output/threshold_"+str(self.threshold)+"/gradient"+str(iTimeStep)+".jpeg")
-            #Image.fromarray(self.localSmoothness).save("../data/output/threshold_"+str(self.threshold)+"/localSmoothness"+str(iTimeStep)+".jpeg")
-            #Image.fromarray(self.RHS).save("../data/output/threshold_"+str(self.threshold)+"/RHS"+str(iTimeStep)+".jpeg")
+            '''Image.fromarray(self.image).save("../data/output/threshold_"+str(self.threshold)+"/denoisedImage"+str(iTimeStep)+".jpeg")
+            Image.fromarray(self.gradient).save("../data/output/threshold_"+str(self.threshold)+"/gradient"+str(iTimeStep)+".jpeg")
+            Image.fromarray(self.localSmoothness).save("../data/output/threshold_"+str(self.threshold)+"/localSmoothness"+str(iTimeStep)+".jpeg")
+            Image.fromarray(self.RHS).save("../data/output/threshold_"+str(self.threshold)+"/RHS"+str(iTimeStep)+".jpeg")'''
             #a = input('').split(" ")[0]
 
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'0'+'.csv',  self.image[0], delimiter=",")
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'0'+'.csv',  self.image[:,:,0], delimiter=",")
             np.savetxt('../data/output/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'0'+'.csv',  self.gradient[0], delimiter=",")
             np.savetxt('../data/output/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'0'+'.csv',  self.localSmoothness[0], delimiter=",")
             np.savetxt('../data/output/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'0'+'.csv',  self.RHS[0], delimiter=",")
 
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'1'+'.csv',  self.image[1], delimiter=",")
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'1'+'.csv',  self.image[:,:,1], delimiter=",")
             np.savetxt('../data/output/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'1'+'.csv',  self.gradient[1], delimiter=",")
             np.savetxt('../data/output/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'1'+'.csv',  self.localSmoothness[1], delimiter=",")
             np.savetxt('../data/output/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'1'+'.csv',  self.RHS[1], delimiter=",")
 
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'2'+'.csv',  self.image[2], delimiter=",")
+            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'2'+'.csv',  self.image[:,:,2], delimiter=",")
             np.savetxt('../data/output/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'2'+'.csv',  self.gradient[2], delimiter=",")
             np.savetxt('../data/output/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'2'+'.csv',  self.localSmoothness[2], delimiter=",")
             np.savetxt('../data/output/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'2'+'.csv',  self.RHS[2], delimiter=",")
 
-            print('Here')
-            a = input('').split(" ")[0]
+            #print('Here')
+            #a = input('').split(" ")[0]
         self.denoisedImage = noisyImage
 
     def solve(self):
