@@ -2,6 +2,7 @@ import constants
 import numpy as np
 from sklearn.neighbors import KDTree
 from PIL import Image
+import cv2
 
 class fuzzyDiffusionFilterPDDO:
     def __init__(self, image, pathToMembershipFunction, threshold):
@@ -217,26 +218,10 @@ class fuzzyDiffusionFilterPDDO:
             
             self.checkSaturation()
             self.normalizeTo8Bits()
-            '''Image.fromarray(self.image).save("../data/output/threshold_"+str(self.threshold)+"/denoisedImage"+str(iTimeStep)+".jpeg")
-            Image.fromarray(self.gradient).save("../data/output/threshold_"+str(self.threshold)+"/gradient"+str(iTimeStep)+".jpeg")
-            Image.fromarray(self.localSmoothness).save("../data/output/threshold_"+str(self.threshold)+"/localSmoothness"+str(iTimeStep)+".jpeg")
-            Image.fromarray(self.RHS).save("../data/output/threshold_"+str(self.threshold)+"/RHS"+str(iTimeStep)+".jpeg")'''
-            #a = input('').split(" ")[0]
-
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'0'+'.csv',  self.image[:,:,0], delimiter=",")
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'0'+'.csv',  self.gradient[0], delimiter=",")
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'0'+'.csv',  self.localSmoothness[0], delimiter=",")
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'0'+'.csv',  self.RHS[0], delimiter=",")
-
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'1'+'.csv',  self.image[:,:,1], delimiter=",")
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'1'+'.csv',  self.gradient[1], delimiter=",")
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'1'+'.csv',  self.localSmoothness[1], delimiter=",")
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'1'+'.csv',  self.RHS[1], delimiter=",")
-
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'2'+'.csv',  self.image[:,:,2], delimiter=",")
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'2'+'.csv',  self.gradient[2], delimiter=",")
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'2'+'.csv',  self.localSmoothness[2], delimiter=",")
-            np.savetxt('../data/output/threshold_'+str(self.threshold)+'/RHS'+str(iTimeStep)+'2'+'.csv',  self.RHS[2], delimiter=",")
+            cv2.imwrite('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'.png', self.image)
+            #cv2.imwrite('../data/output/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'.png',self.gradient)
+            #cv2.imwrite('../data/output/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'.png',self.localSmoothness)
+            #cv2.imwrite('../data/output/threshold_'+str(self.threshold)+"/RHS"+str(iTimeStep)+'.png',self.RHS)
 
             #print('Here')
             #a = input('').split(" ")[0]
