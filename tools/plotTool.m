@@ -1,5 +1,5 @@
 clear all;
-% close all;
+close all;
 
 addpath('../data/simData/')
 
@@ -12,10 +12,29 @@ noisyLena = imread('../data/simData/noisyLena.png');
 figure; imagesc(noisyLena)
 colormap gray
 
+noisyLena1 = imread('../data/outputColorImage/threshold_0.2/denoisedImage100.jpg');
+figure; imagesc(noisyLena1)
+colormap gray
 
-% DerivativeRule = table2array(readtable("../data/output/DerivativeRule.csv"));
-% figure; 
-% imagesc(DerivativeRule.')
+figure; imagesc(noisyLena(:,:,1) - noisyLena1(:,:,1))
+figure; imagesc(noisyLena(:,:,2) - noisyLena1(:,:,2))
+figure; imagesc(noisyLena(:,:,3) - noisyLena1(:,:,3))
+% 
+% noisyLena2 = imread('../data/outputColorImage/threshold_0.2/denoisedImage8.jpg');
+% figure; imagesc(noisyLena2)
+% colormap gray
+
+noisyImage = table2array(readtable("../data/outputColorImage/noisyImage.csv"));
+figure; 
+imagesc(noisyImage)
+colorbar
+
+RHS = table2array(readtable("../data/outputColorImage/RHS.csv"));
+figure; 
+imagesc(RHS)
+colorbar
+
+denoisedImage = noisyImage + RHS; 
 % colormap gray
 % colorbar
 % figure;
@@ -33,11 +52,11 @@ colormap gray
 
 
 
-THRESHOLDS = 0.2;
-%timeSteps = ["0","10","50","100","150","200","300"];
-timeSteps = ["641"];
+THRESHOLDS = 0.15;
+timeSteps = ["0","100","150","200","300","500","700", "800", "900", "1000"];
+%timeSteps = ["641"];
 for iThreshold = 1:length(THRESHOLDS)
-    pathFolder = "../data/output4/threshold_"+string(THRESHOLDS(iThreshold))+"/";
+    pathFolder = "../data/output/threshold_"+string(THRESHOLDS(iThreshold))+"/";
     %pathFolder = "../data/output/threshold_"+string(THRESHOLDS(iThreshold))+"/";
     for iTimeStep = 1:length(timeSteps)
         denoisedImage = table2array(readtable(pathFolder+"denoisedImage"+timeSteps(iTimeStep)+".csv"));

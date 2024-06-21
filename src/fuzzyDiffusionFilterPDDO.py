@@ -199,9 +199,9 @@ class fuzzyDiffusionFilterPDDO:
         timeSteps = int(self.finalTime/self.dt)
         timeSteps = 1500
         
-        denoisedImage = []
         for iTimeStep in range(timeSteps+1):
             print(iTimeStep)
+            denoisedImage = []
             noisyImage = self.image
             self.addBoundary()
             self.assignMembership()
@@ -214,11 +214,16 @@ class fuzzyDiffusionFilterPDDO:
             self.solveRHS() 
             for iChan in range(self.numChannels):
                 denoisedImage.append(noisyImage[:,:,iChan] + self.dt*self.lambd*self.RHS[iChan])
+                #np.savetxt('../data/outputColorImage/noisyImage.csv',  noisyImage[:,:,iChan], delimiter=",")
+                #np.savetxt('../data/outputColorImage/RHS.csv', self.dt*self.lambd*self.RHS[iChan] , delimiter=",")
+                #a = input('').split(" ")[0]
             self.denoisedImage = denoisedImage
-            
             self.checkSaturation()
             self.normalizeTo8Bits()
-            cv2.imwrite('../data/output/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'.png', self.image)
+            cv2.imwrite('../data/outputColorImage/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'.jpg', self.image)
+            
+            #a = input('').split(" ")[0] 
+
             #cv2.imwrite('../data/output/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'.png',self.gradient)
             #cv2.imwrite('../data/output/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'.png',self.localSmoothness)
             #cv2.imwrite('../data/output/threshold_'+str(self.threshold)+"/RHS"+str(iTimeStep)+'.png',self.RHS)
