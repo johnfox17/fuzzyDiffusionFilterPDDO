@@ -90,11 +90,6 @@ class fuzzyDiffusionFilterPDDO:
         for iChan in range(self.numChannels):
             fuzzyMembershipImage.append(self.pixelMemberships[iChan,:,1].reshape((self.Nx,self.Ny)))
         self.fuzzyMembershipImage = np.array(fuzzyMembershipImage)
-        np.savetxt('../data/outputColorImage/image0.csv',  self.fuzzyMembershipImage[0], delimiter=",")
-        np.savetxt('../data/outputColorImage/image1.csv',  self.fuzzyMembershipImage[1], delimiter=",")
-        np.savetxt('../data/outputColorImage/image2.csv',  self.fuzzyMembershipImage[2], delimiter=",")
-        print('Here')
-        a = input('').split(" ")[0]
 
     def findFuzzyDerivativeRule(self):
         D = []
@@ -104,11 +99,14 @@ class fuzzyDiffusionFilterPDDO:
                 for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
                     DChannel.append(np.sum(np.multiply(self.g,self.fuzzyMembershipImage[iChan, iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).flatten()).astype(int))
             D.append(np.pad(np.array(DChannel).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric'))
+
         for iChan in range(self.numChannels):
             while np.max(np.absolute(D[iChan]))>255:
                 D[iChan] = np.divide(D[iChan],2)
-        self.D = D
+        
 
+        self.D = D
+        
     def calculateGradient(self):
         gradient = []
         for iChan in range(self.numChannels):
@@ -129,7 +127,7 @@ class fuzzyDiffusionFilterPDDO:
             while np.max(np.absolute(gradient[iChan]))>255:
                 gradient[iChan] = np.divide(gradient[iChan],2)
         self.gradient = np.array(gradient)
-
+        
     def createSimilarityMatrices(self):
         similarityMatrices = []
         for iChan in range(self.numChannels):
@@ -141,6 +139,13 @@ class fuzzyDiffusionFilterPDDO:
             similarityMatricesChannel[similarityMatricesChannel<1e-9] = 0
             similarityMatrices.append(similarityMatricesChannel) 
         self.similarityMatrices = np.array(similarityMatrices)
+
+        print(np.shape(self.similarityMatrices))
+        #np.savetxt('../data/outputColorImage/image0.csv',  self.gradient[0], delimiter=",")
+        #np.savetxt('../data/outputColorImage/image1.csv',  self.gradient[1], delimiter=",")
+        #np.savetxt('../data/outputColorImage/image2.csv',  self.gradient[2], delimiter=",")
+        print('Here')
+        a = input('').split(" ")[0]
 
     def calculateLocalAndGeneralSmoothness(self):
         localSmoothness = []
