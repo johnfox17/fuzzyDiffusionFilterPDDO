@@ -122,65 +122,35 @@ class fuzzyDiffusionFilterPDDO:
                     gCents = np.array(gCents).reshape((self.kerneldim,self.kerneldim))
                     gradientChannel.append(np.sum(np.multiply(self.GMask,(np.multiply(gCents, self.membershipFunction[L,1].reshape((self.kerneldim,self.kerneldim))))/muPrem).flatten()))
             gradient.append(gradientChannel)
-        
+         
+        gradientOut = []
         for iChan in range(self.numChannels):
             while np.max(np.absolute(gradient[iChan]))>255:
                 gradient[iChan] = np.divide(gradient[iChan],2)
-        self.gradient = np.array(gradient)
+            gradientOut.append(np.array(gradient[iChan]).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))))
+
+        self.gradient = np.array(gradientOut)
         
-    def createSimilarityMatrices(self):
-        similarityMatrices = []
+    def calculateCoefficients(self):
+        coefficients = [] 
+        K=0.8
         for iChan in range(self.numChannels):
-            similarityMatricesChannel = []
-            for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
-                for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
-                    similarityMatricesChannel.append(np.exp(-np.power(np.absolute(np.multiply(self.GMask,self.image[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1, iChan])-self.image[iRow,iCol,iChan]),self.q)/self.Dn))
-            similarityMatricesChannel = np.array(similarityMatricesChannel)
-            similarityMatricesChannel[similarityMatricesChannel<1e-9] = 0
-            similarityMatrices.append(similarityMatricesChannel) 
-        self.similarityMatrices = np.array(similarityMatrices)
-
-        print(np.shape(self.similarityMatrices))
-        #np.savetxt('../data/outputColorImage/image0.csv',  self.gradient[0], delimiter=",")
-        #np.savetxt('../data/outputColorImage/image1.csv',  self.gradient[1], delimiter=",")
-        #np.savetxt('../data/outputColorImage/image2.csv',  self.gradient[2], delimiter=",")
-        print('Here')
-        a = input('').split(" ")[0]
-
-    def calculateLocalAndGeneralSmoothness(self):
-        localSmoothness = []
-        generalAverage = []
-        for iChan in range(self.numChannels):
-            localSmoothnessChannel = []
-            generalAverageChannel = []
-            for currentSimilarityMatrix in range((self.Nx-int(2*self.horizon))*(self.Ny-int(2*self.horizon))):
-                localSmoothnessChannel.append((np.sum(self.similarityMatrices[iChan][currentSimilarityMatrix].flatten())-1)/(len(self.similarityMatrices[iChan][currentSimilarityMatrix].flatten())-1))
-                generalAverageChannel.append(np.average(self.similarityMatrices[iChan][currentSimilarityMatrix]))
-            localSmoothness.append(np.transpose(np.array(localSmoothnessChannel).reshape((self.Nx-int(2*self.horizon)),(self.Ny-int(2*self.horizon)))))
-            generalAverage.append(np.array(generalAverageChannel).reshape((self.Nx-int(2*self.horizon)),(self.Ny-int(2*self.horizon))))
-        self.localSmoothness = np.array(localSmoothness)
-        self.generalAverage = np.array(generalAverage)
-
-    def thresholdLocalSmoothness(self):
-        for iChan in range(self.numChannels):
-            self.localSmoothness[iChan][self.localSmoothness[iChan]>self.threshold] = 0
-        
-        #print('Here')
-        #a = input('').split(" ")[0]
+            coefficients.append(np.exp(-np.power(np.abs(self.gradient[iChan]/K),2)))
+        self.coefficients = np.array(coefficients)
 
     def solveRHS(self):
         RHS = []
         for iChan in range(self.numChannels):
-            gradientChannel = np.pad(self.gradient[iChan].reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric')
-            localSmoothnessChannel = np.pad(self.localSmoothness[iChan] ,int(self.horizon),mode='symmetric')
+            gradientChannel = np.pad(self.gradient[iChan],int(self.horizon),mode='symmetric')
+            coefficients = np.pad(self.coefficients[iChan] ,int(self.horizon),mode='symmetric')
             RHSChannel = []
             for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
                 for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
-                    RHSChannel.append(np.sum(np.multiply(np.multiply(self.GMask, localSmoothnessChannel[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]),np.multiply(self.GMask,gradientChannel[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]))))
+                    RHSChannel.append(np.sum(np.multiply(np.multiply(self.GMask, coefficients[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]),np.multiply(self.GMask,gradientChannel[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]))))
             while np.max(np.absolute(RHSChannel))>255:
                 RHSChannel = np.divide(RHSChannel,2)
             RHS.append(np.transpose(np.array(RHSChannel).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon)))))
-        self.RHS = np.array(RHS)   
+        self.RHS = np.array(RHS) 
 
     def checkSaturation(self):       
         image = []
@@ -217,19 +187,20 @@ class fuzzyDiffusionFilterPDDO:
             self.createFuzzyMembershipImage()
             self.findFuzzyDerivativeRule()
             self.calculateGradient()
-            self.createSimilarityMatrices()
-            self.calculateLocalAndGeneralSmoothness()
-            self.thresholdLocalSmoothness()
+            self.calculateCoefficients()
             self.solveRHS() 
             for iChan in range(self.numChannels):
                 denoisedImage.append(noisyImage[:,:,iChan] + self.dt*self.lambd*self.RHS[iChan])
-                #np.savetxt('../data/outputColorImage/noisyImage.csv',  noisyImage[:,:,iChan], delimiter=",")
-                #np.savetxt('../data/outputColorImage/RHS.csv', self.dt*self.lambd*self.RHS[iChan] , delimiter=",")
-                #a = input('').split(" ")[0]
+            #print(np.shape(denoisedImage)) 
+            #np.savetxt('../data/outputColorImage/image0.csv',  denoisedImage[0], delimiter=",")
+            #np.savetxt('../data/outputColorImage/image1.csv',  denoisedImage[1], delimiter=",")
+            #np.savetxt('../data/outputColorImage/image2.csv',  denoisedImage[2], delimiter=",")
+            #print('Here')
+            #a = input('').split(" ")[0]
             self.denoisedImage = denoisedImage
             self.checkSaturation()
             self.normalizeTo8Bits()
-            cv2.imwrite('../data/outputColorImage/threshold_'+str(self.threshold)+'/denoisedImage'+str(iTimeStep)+'.jpg', self.image)
+            cv2.imwrite('../data/outputColorImage/denoisedImage'+str(iTimeStep)+'.jpg', self.image)
             
             #a = input('').split(" ")[0] 
 
