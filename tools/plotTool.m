@@ -12,6 +12,26 @@ noisyLena = imread('../data/simData/noisyLena.png');
 figure; imagesc(noisyLena)
 colormap gray
 
+
+image0 = table2array(readtable('../data/outputColorImage/image0.csv'));
+figure; imagesc(abs(reshape(image0,[512 512]).'))
+colormap gray
+colorbar
+
+image1 = table2array(readtable('../data/outputColorImage/image1.csv'));
+figure; imagesc(abs(reshape(image1,[512 512]).'))
+colormap gray
+colorbar
+
+image2 = table2array(readtable('../data/outputColorImage/image2.csv'));
+figure; imagesc(abs(reshape(image2,[512 512]).'))
+colormap gray
+colorbar
+
+figure; imagesc(abs(image0.'+image1.'+image2.'))
+colormap gray
+colorbar
+
 noisyLena1 = imread('../data/outputColorImage/threshold_0.2/denoisedImage100.jpg');
 figure; imagesc(noisyLena1)
 colormap gray
