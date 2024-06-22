@@ -81,16 +81,20 @@ class fuzzyDiffusionFilterPDDO:
                     currentPixelMembership.append(list(self.membershipFunction[membershipIndex])[1])
                     pixelMembershipsChan.append(currentPixelMembership)
             pixelMemberships.append(pixelMembershipsChan)
+
+        pixelMemberships = np.array(pixelMemberships)
         self.pixelMemberships = pixelMemberships
 
     def createFuzzyMembershipImage(self):
         fuzzyMembershipImage = []
         for iChan in range(self.numChannels):
-            fuzzyMembershipChannel = []
-            for iPixel in range(self.Nx*self.Ny):
-                fuzzyMembershipChannel.append(self.pixelMemberships[iChan][iPixel][1])
-            fuzzyMembershipImage.append(np.array(fuzzyMembershipChannel).reshape((self.Nx,self.Ny)))
+            fuzzyMembershipImage.append(self.pixelMemberships[iChan,:,1].reshape((self.Nx,self.Ny)))
         self.fuzzyMembershipImage = np.array(fuzzyMembershipImage)
+        np.savetxt('../data/outputColorImage/image0.csv',  self.fuzzyMembershipImage[0], delimiter=",")
+        np.savetxt('../data/outputColorImage/image1.csv',  self.fuzzyMembershipImage[1], delimiter=",")
+        np.savetxt('../data/outputColorImage/image2.csv',  self.fuzzyMembershipImage[2], delimiter=",")
+        print('Here')
+        a = input('').split(" ")[0]
 
     def findFuzzyDerivativeRule(self):
         D = []
