@@ -133,23 +133,37 @@ class fuzzyDiffusionFilterPDDO:
         
     def calculateCoefficients(self):
         coefficients = [] 
-        K=0.8
         for iChan in range(self.numChannels):
-            coefficients.append(np.exp(-np.power(np.abs(self.gradient[iChan]/K),2)))
+            coefficientsChannel = []
+            gradientChannel = np.pad(self.gradient[iChan],2*int(self.horizon),mode='symmetric')
+            for iCol in range(int(self.horizon),self.Nx + int(self.horizon)):
+                for iRow in range(int(self.horizon),self.Ny + int(self.horizon)):
+                    iGradients = np.multiply(self.GMask,gradientChannel[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1])
+                    K = 0.8*np.linalg.norm(iGradients.flatten())
+                    if K == 0:
+                        coefficientsChannel.append(np.zeros((self.kerneldim, self.kerneldim)))
+                    else:
+                        coefficientsChannel.append(np.exp(-np.power(np.abs(np.divide(iGradients,K)),2)))
+            coefficients.append(np.array(coefficientsChannel).reshape((self.Nx, self.Ny, self.kerneldim, self.kerneldim)))
         self.coefficients = np.array(coefficients)
 
     def solveRHS(self):
         RHS = []
         for iChan in range(self.numChannels):
             gradientChannel = np.pad(self.gradient[iChan],int(self.horizon),mode='symmetric')
-            coefficients = np.pad(self.coefficients[iChan] ,int(self.horizon),mode='symmetric')
+            coefficients = self.coefficients[iChan] 
             RHSChannel = []
             for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
                 for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
-                    RHSChannel.append(np.sum(np.multiply(np.multiply(self.GMask, coefficients[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]),np.multiply(self.GMask,gradientChannel[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]))))
+                    RHSChannel.append(np.sum(np.multiply(coefficients[iRow,iCol], np.multiply(self.GMask,gradientChannel[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]))))
             while np.max(np.absolute(RHSChannel))>255:
                 RHSChannel = np.divide(RHSChannel,2)
             RHS.append(np.transpose(np.array(RHSChannel).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon)))))
+        #print('Here')
+        #np.savetxt('../data/outputColorImage/image0.csv',  RHS[0], delimiter=",")
+        #np.savetxt('../data/outputColorImage/image1.csv',  RHS[1], delimiter=",")
+        #np.savetxt('../data/outputColorImage/image2.csv',  RHS[2], delimiter=",")
+        #a = input('').split(" ")[0]
         self.RHS = np.array(RHS) 
 
     def checkSaturation(self):       
