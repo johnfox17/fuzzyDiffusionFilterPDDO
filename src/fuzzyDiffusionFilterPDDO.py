@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.neighbors import KDTree
 from PIL import Image
 import cv2
+from scipy.ndimage import gaussian_filter
 
 class fuzzyDiffusionFilterPDDO:
     def __init__(self, image, pathToMembershipFunction, threshold):
@@ -100,11 +101,6 @@ class fuzzyDiffusionFilterPDDO:
                     DChannel.append(np.sum(np.multiply(self.g,self.fuzzyMembershipImage[iChan, iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).flatten()).astype(int))
             D.append(np.pad(np.array(DChannel).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric'))
 
-        for iChan in range(self.numChannels):
-            while np.max(np.absolute(D[iChan]))>255:
-                D[iChan] = np.divide(D[iChan],2)
-        
-
         self.D = D
         
     def calculateGradient(self):
@@ -121,72 +117,69 @@ class fuzzyDiffusionFilterPDDO:
                         gCents.append(self.gCenter[np.abs(self.gCenter-iD).argmin()])
                     gCents = np.array(gCents).reshape((self.kerneldim,self.kerneldim))
                     gradientChannel.append(np.sum(np.multiply(self.GMask,(np.multiply(gCents, self.membershipFunction[L,1].reshape((self.kerneldim,self.kerneldim))))/muPrem).flatten()))
-            gradient.append(gradientChannel)
-         
-        gradientOut = []
-        for iChan in range(self.numChannels):
-            while np.max(np.absolute(gradient[iChan]))>255:
-                gradient[iChan] = np.divide(gradient[iChan],2)
-            gradientOut.append(np.array(gradient[iChan]).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))))
-
-        self.gradient = np.array(gradientOut)
+            gradient.append(np.array(gradientChannel).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))))
+        
+        gradient = np.array(np.sum(gradient,axis=0))
+        self.gradient = np.divide(gradient, np.max(np.abs(gradient)))
         
     def calculateCoefficients(self):
         coefficients = [] 
+        gradient = np.pad(self.gradient,2*int(self.horizon),mode='symmetric')
         for iChan in range(self.numChannels):
             coefficientsChannel = []
-            gradientChannel = np.pad(self.gradient[iChan],2*int(self.horizon),mode='symmetric')
             for iCol in range(int(self.horizon),self.Nx + int(self.horizon)):
                 for iRow in range(int(self.horizon),self.Ny + int(self.horizon)):
-                    iGradients = np.multiply(self.GMask,gradientChannel[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1])
-                    K = 0.8*np.linalg.norm(iGradients.flatten())
+                    iGradients = np.multiply(self.GMask,gradient[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1])
+                    K = 0.2*np.linalg.norm(iGradients.flatten())
                     if K == 0:
                         coefficientsChannel.append(np.zeros((self.kerneldim, self.kerneldim)))
                     else:
-                        coefficientsChannel.append(np.exp(-np.power(np.abs(np.divide(iGradients,K)),2)))
+                        currentCoefficients = np.exp(-np.power(np.abs(np.divide(iGradients,K)),2))
+                        coefficientsChannel.append(np.divide(currentCoefficients,np.linalg.norm(currentCoefficients.flatten())))
             coefficients.append(np.array(coefficientsChannel).reshape((self.Nx, self.Ny, self.kerneldim, self.kerneldim)))
         self.coefficients = np.array(coefficients)
-
     def solveRHS(self):
         RHS = []
         for iChan in range(self.numChannels):
-            gradientChannel = np.pad(self.gradient[iChan],int(self.horizon),mode='symmetric')
+            gradientChannel = np.pad(self.gradient,int(self.horizon),mode='symmetric')
             coefficients = self.coefficients[iChan] 
             RHSChannel = []
             for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
                 for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
                     RHSChannel.append(np.sum(np.multiply(coefficients[iRow,iCol], np.multiply(self.GMask,gradientChannel[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]))))
-            while np.max(np.absolute(RHSChannel))>255:
-                RHSChannel = np.divide(RHSChannel,2)
             RHS.append(np.transpose(np.array(RHSChannel).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon)))))
-        #print('Here')
-        #np.savetxt('../data/outputColorImage/image0.csv',  RHS[0], delimiter=",")
-        #np.savetxt('../data/outputColorImage/image1.csv',  RHS[1], delimiter=",")
-        #np.savetxt('../data/outputColorImage/image2.csv',  RHS[2], delimiter=",")
-        #a = input('').split(" ")[0]
         self.RHS = np.array(RHS) 
 
     def checkSaturation(self):       
-        image = []
         self.Nx = self.Nx - 2*int(self.horizon)
         self.Ny = self.Ny - 2*int(self.horizon)
-        for iChan in range(self.numChannels):
-            denoisedImageChannel = self.denoisedImage[iChan].flatten()
-            while np.max(np.absolute(denoisedImageChannel))>255:
-                denoisedImageChannel = np.divide(denoisedImageChannel,2)
-            image.append(denoisedImageChannel.reshape((self.Nx, self.Ny)))
-        self.image = image
+        denoisedImageChannel0 = self.denoisedImage[0].flatten()
+        denoisedImageChannel1 = self.denoisedImage[1].flatten()
+        denoisedImageChannel2 = self.denoisedImage[2].flatten()
+        if (np.max(np.absolute(denoisedImageChannel0))>255 or  np.max(np.absolute(denoisedImageChannel1))>255 or np.max(np.absolute(denoisedImageChannel2))>255):
+            image = []
+            while (np.max(np.absolute(denoisedImageChannel0))>255 or  np.max(np.absolute(denoisedImageChannel1))>255 or np.max(np.absolute(denoisedImageChannel2))>255):
+                denoisedImageChannel0 = np.divide(denoisedImageChannel0,2)
+                denoisedImageChannel1 = np.divide(denoisedImageChannel1,2)
+                denoisedImageChannel2 = np.divide(denoisedImageChannel2,2)
+                image.append(denoisedImageChannel0.reshape((self.Nx, self.Ny)))
+                image.append(denoisedImageChannel1.reshape((self.Nx, self.Ny)))
+                image.append(denoisedImageChannel2.reshape((self.Nx, self.Ny)))
+            self.image = image
         
-    
+        else:
+            self.image = self.denoisedImage
+
     def normalizeTo8Bits(self):
-        image = []
+        image = self.image
+        imageOutput = []
         for iChan in range(self.numChannels):
-            imageChannel = self.image[iChan].flatten()
+            imageChannel = image[iChan].flatten()
             imageChannel = np.multiply(np.divide(imageChannel,np.max(np.absolute(imageChannel))),255)
-            image.append(imageChannel.reshape((self.Nx, self.Ny)))
-        image = np.swapaxes(np.array(image), 0, 1)
-        image = np.swapaxes(image,1,2)
-        self.image = image
+            imageOutput.append(imageChannel.reshape((self.Nx, self.Ny)))
+        imageOutput = np.swapaxes(np.array(imageOutput), 0, 1)
+        imageOutput = np.swapaxes(imageOutput,1,2)
+        self.image = imageOutput
 
     def timeIntegrate(self):
         timeSteps = int(self.finalTime/self.dt)
@@ -205,25 +198,16 @@ class fuzzyDiffusionFilterPDDO:
             self.solveRHS() 
             for iChan in range(self.numChannels):
                 denoisedImage.append(noisyImage[:,:,iChan] + self.dt*self.lambd*self.RHS[iChan])
-            #print(np.shape(denoisedImage)) 
-            #np.savetxt('../data/outputColorImage/image0.csv',  denoisedImage[0], delimiter=",")
-            #np.savetxt('../data/outputColorImage/image1.csv',  denoisedImage[1], delimiter=",")
-            #np.savetxt('../data/outputColorImage/image2.csv',  denoisedImage[2], delimiter=",")
-            #print('Here')
-            #a = input('').split(" ")[0]
-            self.denoisedImage = denoisedImage
+            self.denoisedImage = np.array(denoisedImage)
             self.checkSaturation()
             self.normalizeTo8Bits()
-            cv2.imwrite('../data/outputColorImage/denoisedImage'+str(iTimeStep)+'.jpg', self.image)
+            #np.savetxt('../data/outputColorImage5/image0_'+str(iTimeStep)+'.csv',  self.image[:,:,0], delimiter=",")
+            #np.savetxt('../data/outputColorImage5/image1_'+str(iTimeStep)+'.csv',  self.image[:,:,1], delimiter=",")
+            #np.savetxt('../data/outputColorImage5/image2_'+str(iTimeStep)+'.csv',  self.image[:,:,2], delimiter=",")
+            #cv2.imwrite('../data/outputColorImage5/denoisedImage'+str(iTimeStep)+'.jpg', gaussian_filter(self.image, sigma=0.2))
+            cv2.imwrite('../data/outputColorImage5/denoisedImage'+str(iTimeStep)+'.jpg', self.image)
             
-            #a = input('').split(" ")[0] 
 
-            #cv2.imwrite('../data/output/threshold_'+str(self.threshold)+'/gradient'+str(iTimeStep)+'.png',self.gradient)
-            #cv2.imwrite('../data/output/threshold_'+str(self.threshold)+'/localSmoothness'+str(iTimeStep)+'.png',self.localSmoothness)
-            #cv2.imwrite('../data/output/threshold_'+str(self.threshold)+"/RHS"+str(iTimeStep)+'.png',self.RHS)
-
-            #print('Here')
-            #a = input('').split(" ")[0]
         self.denoisedImage = noisyImage
 
     def solve(self):
