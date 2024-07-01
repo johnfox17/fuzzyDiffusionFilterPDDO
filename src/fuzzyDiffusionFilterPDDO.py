@@ -130,7 +130,7 @@ class fuzzyDiffusionFilterPDDO:
             for iCol in range(int(self.horizon),self.Nx + int(self.horizon)):
                 for iRow in range(int(self.horizon),self.Ny + int(self.horizon)):
                     iGradients = np.multiply(self.GMask,gradient[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1])
-                    K = 0.8*np.linalg.norm(iGradients.flatten())
+                    K = 0.2*np.linalg.norm(iGradients.flatten())
                     if K == 0:
                         coefficientsChannel.append(np.zeros((self.kerneldim, self.kerneldim)))
                     else:
@@ -205,7 +205,7 @@ class fuzzyDiffusionFilterPDDO:
             #np.savetxt('../data/outputColorImage5/image1_'+str(iTimeStep)+'.csv',  self.image[:,:,1], delimiter=",")
             #np.savetxt('../data/outputColorImage5/image2_'+str(iTimeStep)+'.csv',  self.image[:,:,2], delimiter=",")
             #cv2.imwrite('../data/outputColorImage5/denoisedImage'+str(iTimeStep)+'.jpg', gaussian_filter(self.image, sigma=0.2))
-            cv2.imwrite('../data/outputColorImage5/denoisedImage'+str(iTimeStep)+'.jpg', self.image)
+            cv2.imwrite('../data/outputColorImage/denoisedImage'+str(iTimeStep)+'.jpg', self.image)
             
 
         self.denoisedImage = noisyImage
