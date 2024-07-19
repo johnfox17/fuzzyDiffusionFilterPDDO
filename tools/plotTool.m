@@ -13,34 +13,48 @@ figure; imagesc(noisyLena)
 % colormap gray
 
 
-% image0_0 = table2array(readtable('../data/outputColorImage5/image0_0.csv'));
-% figure; imagesc(image0_0)
+
+% noisyImage0 = table2array(readtable('../data/outputColorImage/image0_010.csv'));
+% figure; imagesc(abs(noisyImage0))
 % colormap gray
 % colorbar
 % 
-% image1_0 = table2array(readtable('../data/outputColorImage5/image1_0.csv'));
-% figure; imagesc(abs(image1_0))
-% % colormap gray
-% colorbar
-% 
-% image2_0 = table2array(readtable('../data/outputColorImage5/image2_0.csv'));
-% figure; imagesc(abs(image2_0))
-% % colormap gray
-% colorbar
-% 
-% image0_1 = table2array(readtable('../data/outputColorImage5/image0_2.csv'));
-% figure; imagesc(image0_1)
+% noisyImage1 = table2array(readtable('../data/outputColorImage/image1_010.csv'));
+% figure; imagesc(abs(noisyImage1))
 % colormap gray
 % colorbar
 % 
-% image1_1 = table2array(readtable('../data/outputColorImage5/image1_2.csv'));
-% figure; imagesc(abs(image1_1))
+% noisyImage2 = table2array(readtable('../data/outputColorImage/image2_010.csv'));
+% figure; imagesc(abs(noisyImage2))
+% colormap gray
+% colorbar
+
+% 
+% RHS0_1 = table2array(readtable('../data/outputColorImage/RHS0_0.csv'));
+% figure; imagesc(RHS0_1)
 % % colormap gray
 % colorbar
 % 
-% image2_1 = table2array(readtable('../data/outputColorImage5/image2_2.csv'));
-% figure; imagesc(abs(image2_1))
-% % colormap gray
+% RHS1_1 = table2array(readtable('../data/outputColorImage/RHS1_0.csv'));
+% figure; imagesc(RHS1_1)
+% colormap gray
+% colorbar
+% 
+% RHS2_1 = table2array(readtable('../data/outputColorImage/RHS2_0.csv'));
+% figure; imagesc(RHS2_1)
+% colormap gray
+% colorbar
+% % 
+% figure; imagesc(noisyImage0 + RHS0_1)
+% colormap gray
+% colorbar
+% 
+% figure; imagesc(noisyImage1 + RHS1_1)
+% colormap gray
+% colorbar
+% 
+% figure; imagesc(noisyImage2 + RHS2_1)
+% colormap gray
 % colorbar
 
 % for i =1:80
@@ -60,8 +74,8 @@ figure; imagesc(noisyLena)
 % % colormap gray
 % colorbar
 
-% noisyLena = imread('../data/outputColorImage/denoisedImage1300.jpg');
-noisyLena1 = imread('../data/outputColorImage/denoisedImage1301.jpg');
+% noisyLena = imread('../data/outputColorImage6/denoisedImage5.jpg');
+noisyLena1 = imread('../data/outputColorImage1/denoisedImage100.jpg');
 
 for i = 1:3
     figure;
@@ -69,29 +83,30 @@ for i = 1:3
     
     ax1 = nexttile;
     imagesc(lena(:,:,i))
-    colormap gray
+    % colormap gray
     colorbar
     title("Channel"+string(i) )
     
     ax2 = nexttile;
     imagesc(noisyLena(:,:,i))
-    colormap gray
+    % colormap gray
     colorbar
     title("Channel"+string(i) )
     
     ax3 = nexttile;
-    imagesc(noisyLena1(:,:,i))
+    imagesc(imadjustn(noisyLena1(:,:,i)))
     title("Channel"+string(i))
-    colormap gray;
+    % colormap gray;
     colorbar
 
     ax4 = nexttile;
-    imagesc(noisyLena(:,:,i)-noisyLena1(:,:,i))
+    imagesc(abs(noisyLena(:,:,i)-noisyLena1(:,:,i)))
     title("Channel"+string(i))
-    colormap gray;
+    % colormap gray;
     colorbar
 
     linkaxes([ax1 ax2 ax3 ax4])
+    figure; surf(noisyLena1(:,:,i))
 end
 
 figure;
@@ -114,13 +129,15 @@ colorbar
 % colormap gray
 title("Denoised Lena")
 
-ax3 = nexttile;
+ax4 = nexttile;
+% imagesc(imadjustn(imgaussfilt(noisyLena1,1.2)))
+% imagesc(imgaussfilt(noisyLena1,0.5))
 imagesc(imadjustn(noisyLena1))
 colorbar
 % colormap gray
 title("Denoised Lena Contrast")
 shading interp
-
+linkaxes([ax1 ax2 ax3 ax4])
 
 % 
 % noisyLena2 = imread('../data/outputColorImage/threshold_0.2/denoisedImage8.jpg');
