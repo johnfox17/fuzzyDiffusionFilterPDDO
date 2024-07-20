@@ -3,6 +3,7 @@ close all;
 addpath('../data/simData');
 %read image
 lena  = imread('Lena.png');
+noisyLena1  = imread('noisyLena.png');
 % [numRows,numCols,numChannels] = size(lena);
 % noise = [];
 % noisyLena = zeros(numRows,numCols,numChannels);
@@ -24,14 +25,21 @@ lena  = imread('Lena.png');
 %noisyLena = awgn(single(lena(:)),10,'measured');
 %noisyLena = reshape(noisyLena,[512 512]);
 %noisyLena = imnoise(lena,'salt & pepper');
-noisyLena = zeros(512,512,3);
-for iChannel = 1:3
-    noise = wgn(512,512,35);
-    figure; surf(noise)
-    % figure; surf(single(lena(:,:,iChannel)))
-    noisyLena(:,:,iChannel) = single(lena(:,:,iChannel)) + noise;
-end
-noisyLena = uint8(noisyLena);
+% noisyLena = zeros(512,512,3);
+mean = 0;
+var_gauss = 0.02;
+noisyLena = imnoise(lena,'gaussian',mean,var_gauss);
+
+
+% figure; imagesc(lena)
+% for iChannel = 1:3
+%     noise = wgn(512,512,35);
+%     figure; surf(noise)
+%     % figure; surf(single(lena(:,:,iChannel)))
+%     %noisyLena(:,:,iChannel) = single(lena(:,:,iChannel)) + noise;
+%     %imnoise(I,'gaussian',mean,var_gauss)
+% end
+% noisyLena = uint8(noisyLena);
 
 
 figure; imagesc(lena);
