@@ -2,7 +2,7 @@ clear all;
 close all;
 
 pathFolderInit = '../data/outputColorImage1/';
-pathFolderFinal = '../data/outputColorImage1/';
+pathFolderFinal = '../data/outputColorImage2/';
 mmssim = [];
 psnr = [];
 

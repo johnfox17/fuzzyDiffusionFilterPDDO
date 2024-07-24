@@ -14,16 +14,16 @@ mssim2 = [];
 PSNR0 = [];
 PSNR1 = [];
 PSNR2 = [];
-
-for iImage = 0:131
+lenaChan0 = lena(:,:,1);
+lenaChan1 = lena(:,:,2);
+lenaChan2 = lena(:,:,3);
+for iImage = 0:661
    
     currentImage = single(imread(pathFolder+"denoisedImage"+string(iImage)+".jpg"));
-    lenaChan0 = lena(:,:,1);
-    lenaChan1 = lena(:,:,2);
-    lenaChan2 = lena(:,:,3);
-    currentImageChan0 = imadjustn(currentImage(:,:,1));
-    currentImageChan1 = imadjustn(currentImage(:,:,2));
-    currentImageChan2 = imadjustn(currentImage(:,:,3));
+
+    currentImageChan0 = currentImage(:,:,1);
+    currentImageChan1 = currentImage(:,:,2);
+    currentImageChan2 = currentImage(:,:,3);
     [mssim_0, ssim_map_0] = ssim_index(lenaChan0,currentImageChan0 );
     [mssim_1, ssim_map_1] = ssim_index(lenaChan1, currentImageChan1);
     [mssim_2, ssim_map_2] = ssim_index(lenaChan2, currentImageChan2);
