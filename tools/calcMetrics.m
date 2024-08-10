@@ -1,7 +1,7 @@
 % close all;
 clear all;
 addpath('../data/simData/')
-pathFolder = '../data/outputColorImage7/';
+pathFolder = '../data/output2/';
 
 noisyLena = single(imread('noisyLenaGrayScale.jpg'));
 % lena = rgb2gray(imread('Lena.png'));
@@ -11,7 +11,7 @@ lena = imread('cameraman.png');
 mssim = [];
 PSNR = [];
 
-for iImage = 0:36
+for iImage = 0:3
    
     currentImage = single(imread(pathFolder+string(iImage)+"_"+"denoisedImage.jpg"));
     

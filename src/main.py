@@ -19,7 +19,8 @@ def main():
 
     else:
         pathToLena = \
-            '..\\data\\simData\\noisyLena.png'
+            '..\\data\\simData\\noisyCameraman.png' 
+            #'..\\data\\simData\\noisyLena.png'
             #'..\\data\\simData\\noisyCircle.png'
             #'..\\data\\simData\\noisyLena.png'
             #'..\\data\\simData\\Lena.png'

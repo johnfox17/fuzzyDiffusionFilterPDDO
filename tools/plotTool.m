@@ -7,7 +7,7 @@ lena = imread('../data/simData/cameraman.png');
 % lena = rgb2gray(lena);
 figure; imagesc(lena)
 colormap gray
-
+% 
 noisyLena = imread('../data/simData/noisyLenaGrayScale.jpg');
 figure; imagesc(noisyLena)
 colormap gray
@@ -15,8 +15,12 @@ colormap gray
 % figure; imagesc(noisyLena)
 % colormap gray
 
-% noisyImage0 = table2array(readtable('../data/simData/g01.csv'));
-% figure; imagesc(abs(noisyImage0))
+% noisyImage0 = table2array(readtable('../data/output/D10.csv'));
+% figure; imagesc(noisyImage0)
+% colormap gray
+% colorbar
+% noisyImage0 = table2array(readtable('../data/output/D01.csv'));
+% figure; imagesc(noisyImage0)
 % colormap gray
 % colorbar
 % 
@@ -31,10 +35,10 @@ colormap gray
 % colorbar
 
 
-% noisyLena = imread('../data/outputColorImage7/5_denoisedImage.jpg');
-noisyLena1 = imread('../data/outputColorImage7/36_denoisedImage.jpg');
+% noisyLena = imread('../data/output/2_denoisedImage.jpg');
+noisyLena1 = imread('../data/output2/20_denoisedImage.jpg');
 % noisyLena1 = imadjustn(noisyLena1,[0.1 0.9]);
-% noisyLena1(noisyLena1>205) =205;
+% noisyLena1(noisyLena1>150) =150;
 % noisyLena1 = imgaussfilt(noisyLena1,0.5);
 % noisyLena1 = imgaussfilt(noisyLena1,0.7);
 
@@ -63,7 +67,7 @@ for i = 1:1
     title("Channel"+string(i) )
     
     ax3 = nexttile;
-    image(noisyLena1(:,:,i))
+    image(noisyLena1(:,:,i)./2)
     title("Channel"+string(i))
     colormap gray;
     colorbar

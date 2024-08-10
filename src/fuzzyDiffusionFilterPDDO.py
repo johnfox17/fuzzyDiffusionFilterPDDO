@@ -11,7 +11,6 @@ class fuzzyDiffusionFilterPDDO:
     def __init__(self,pathToMembershipFunction):
         self.numChannels = constants.NUMCHANNELS
         self.pathToMembershipFunction = pathToMembershipFunction 
-        self.contrastEnhancementLUT = constants.contrastEnhancementLUT
         self.l1 = constants.L1
         self.l2 = constants.L2
         self.Nx = constants.NX
@@ -50,8 +49,8 @@ class fuzzyDiffusionFilterPDDO:
     def addBoundary(self):
         self.Nx = self.Nx + 2*int(self.horizon)
         self.Ny = self.Ny + 2*int(self.horizon)
-        #self.image = np.pad(self.image,int(self.horizon),mode='symmetric')
-        self.image = np.pad(self.image,int(self.horizon),'constant')
+        self.image = np.pad(self.image,int(self.horizon),mode='symmetric')
+        #self.image = np.pad(self.image,int(self.horizon),'constant')
     
     def loadMembershipFunction(self):
         self.membershipFunction = np.loadtxt(self.pathToMembershipFunction, delimiter=",")
@@ -93,9 +92,13 @@ class fuzzyDiffusionFilterPDDO:
             for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
                 D10.append(np.sum(np.multiply(self.g10,self.fuzzyMembershipImage[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).flatten()).astype(int))
                 D01.append(np.sum(np.multiply(self.g01,self.fuzzyMembershipImage[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).flatten()).astype(int))
-        self.D10 = np.transpose(np.pad(np.array(D10).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),'constant'))
-        self.D01 = np.transpose(np.pad(np.array(D01).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),'constant'))
-                        
+        self.D10 = np.transpose(np.pad(np.array(D10).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric'))
+        self.D01 = np.transpose(np.pad(np.array(D01).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric'))
+
+        #np.savetxt('../data/output/D10.csv',  self.D10, delimiter=",")
+        #np.savetxt('../data/output/D01.csv',  self.D10, delimiter=",")
+        #print('Here')
+        #a = input('').split(" ")[0]
         
     def calculateGradient(self):
         gradient10 = []
@@ -121,7 +124,7 @@ class fuzzyDiffusionFilterPDDO:
     def calculateCoefficients(self):
         coefficients = [] 
         #K=0.8*np.mean(self.gradient10 + self.gradient01)
-        K=0.2
+        K=0.95
         for iCol in range(self.Nx-int(2*self.horizon)):
             for iRow in range(self.Ny-int(2*self.horizon)):
                 iGradientMagnitude = np.sqrt(self.gradient10[iRow,iCol]**2 + self.gradient01[iRow,iCol]**2)
@@ -163,7 +166,8 @@ class fuzzyDiffusionFilterPDDO:
         gradient = self.gradient10 + self.gradient01
         for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
             for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
-                RHS.append(np.sum(np.multiply(np.multiply(self.rhsMask,gradient[iRow-int(self.horizon-2):iRow+int(self.horizon-2)+1,iCol-int(self.horizon-2):iCol+int(self.horizon-2)+1]),self.coefficients[iRow-int(self.horizon-2):iRow+int(self.horizon-2)+1,iCol-int(self.horizon-2):iCol+int(self.horizon-2)+1])))
+                RHS.append(np.sum(np.multiply(np.multiply(self.GMask,gradient[iRow-int(self.horizon-2):iRow+int(self.horizon-2)+1,iCol-int(self.horizon-2):iCol+int(self.horizon-2)+1]),self.coefficients[iRow-int(self.horizon-2):iRow+int(self.horizon-2)+1,iCol-int(self.horizon-2):iCol+int(self.horizon-2)+1])))
+        
         self.RHS = np.transpose(np.array(RHS).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))))
 
 
@@ -202,7 +206,7 @@ class fuzzyDiffusionFilterPDDO:
         #print('calculateGradient'+str(np.shape(self.image)))
         self.calculateCoefficients()
         #print('calculateCoefficients'+str(np.shape(self.image)))
-        #self.calculateGradientOfCoefficients()
+        self.calculateGradientOfCoefficients()
         #print('calculateGradientOfCoefficients '+str(np.shape(self.image)))
         self.solveRHS()
         #print('solveRHS'+str(np.shape(self.image)))
@@ -229,7 +233,7 @@ class fuzzyDiffusionFilterPDDO:
 
             #cv2.imwrite('../data/outputColorImage5/denoisedImage'+str(iTimeStep)+'.jpg', gaussian_filter(self.image, sigma=0.2))
             #a = input('').split(" ")[0]
-            cv2.imwrite('../data/outputColorImage7/'+str(iTimeStep)+'_'+'denoisedImage.jpg', self.image)
+            cv2.imwrite('../data/output2/'+str(iTimeStep)+'_'+'denoisedImage.jpg', self.image)
             #self.image = self.denoisedImage
 
     def solve(self, image):
