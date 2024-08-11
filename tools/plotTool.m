@@ -7,18 +7,23 @@ lena = imread('../data/simData/cameraman.png');
 % lena = rgb2gray(lena);
 figure; imagesc(lena)
 colormap gray
+figure;histogram(lena)
 % 
 noisyLena = imread('../data/simData/noisyLenaGrayScale.jpg');
 figure; imagesc(noisyLena)
 colormap gray
+figure;histogram(noisyLena)
 % noisyLena = imgaussfilt(noisyLena,0.7);
 % figure; imagesc(noisyLena)
 % colormap gray
 
-% noisyImage0 = table2array(readtable('../data/output/D10.csv'));
+% noisyImage0 = table2array(readtable('../data/output/img_rescale.csv'));
 % figure; imagesc(noisyImage0)
 % colormap gray
 % colorbar
+% figure;histogram(noisyImage0)
+
+
 % noisyImage0 = table2array(readtable('../data/output/D01.csv'));
 % figure; imagesc(noisyImage0)
 % colormap gray
@@ -36,7 +41,10 @@ colormap gray
 
 
 % noisyLena = imread('../data/output/2_denoisedImage.jpg');
-noisyLena1 = imread('../data/output2/20_denoisedImage.jpg');
+%noisyLena1 = imread('../data/output/0_denoisedImage.jpg');
+% noisyLena = table2array(readtable('../data/output_0.8Mean/8_denoisedImage.csv'));
+noisyLena1 = table2array(readtable('../data/output_0.8Mean/1500_denoisedImage.csv'));
+figure; histogram(noisyLena1)
 % noisyLena1 = imadjustn(noisyLena1,[0.1 0.9]);
 % noisyLena1(noisyLena1>150) =150;
 % noisyLena1 = imgaussfilt(noisyLena1,0.5);
@@ -55,31 +63,31 @@ for i = 1:1
     tiledlayout(1,4);
     
     ax1 = nexttile;
-    image(lena(:,:,i))
+    imagesc(lena(:,:,i))
     colormap gray
     colorbar
     title("Channel"+string(i) )
     
     ax2 = nexttile;
-    image(noisyLena(:,:,i))
+    imagesc(noisyLena(:,:,i))
     colormap gray
     colorbar
     title("Channel"+string(i) )
     
     ax3 = nexttile;
-    image(noisyLena1(:,:,i)./2)
+    imagesc(noisyLena1(:,:,i))
     title("Channel"+string(i))
     colormap gray;
     colorbar
 
     ax4 = nexttile;
-    image(noisyLena1(:,:,i)-noisyLena(:,:,i))
+    imagesc(noisyLena1(:,:,i)-double(noisyLena(:,:,i)))
     title("Channel"+string(i))
     % colormap gray;
     colorbar
 
     linkaxes([ax1 ax2 ax3 ax4])
-    figure; surf(noisyLena1(:,:,i))
+    figure; surf(noisyLena1(:,:,i)-double(noisyLena(:,:,i)))
 end
 
 figure;

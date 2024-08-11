@@ -4,8 +4,8 @@ from sklearn.neighbors import KDTree
 from PIL import Image
 import cv2
 from scipy.ndimage import gaussian_filter
-from multiprocessing import Process
 import math
+from skimage import exposure
 
 class fuzzyDiffusionFilterPDDO:
     def __init__(self,pathToMembershipFunction):
@@ -124,13 +124,13 @@ class fuzzyDiffusionFilterPDDO:
     def calculateCoefficients(self):
         coefficients = [] 
         #K=0.8*np.mean(self.gradient10 + self.gradient01)
-        K=0.95
+        K=0.8
         for iCol in range(self.Nx-int(2*self.horizon)):
             for iRow in range(self.Ny-int(2*self.horizon)):
                 iGradientMagnitude = np.sqrt(self.gradient10[iRow,iCol]**2 + self.gradient01[iRow,iCol]**2)
                 #iGradientMagnitude = np.sqrt(self.gradient10[iRow,iCol]**2)
-                #coefficients.append(np.exp(-np.power(np.abs(np.divide(iGradientMagnitude,K)),2)))
-                coefficients.append(1/(1+np.divide(iGradientMagnitude,K)))
+                coefficients.append(np.exp(-np.power(np.abs(np.divide(iGradientMagnitude,K)),2)))
+                #coefficients.append(1/(1+np.divide(iGradientMagnitude,K)))
         self.coefficients = np.array(np.pad(np.transpose(np.array(coefficients).reshape((self.Nx-int(2*self.horizon), self.Ny-int(2*self.horizon)))),int(self.horizon),'constant'))
         #self.coefficients = np.array(np.transpose(np.array(coefficients).reshape((self.Nx-int(2*self.horizon), self.Ny-int(2*self.horizon)))))
         #self.coefficients = np.divide(coefficients, np.max(coefficients))
@@ -182,7 +182,8 @@ class fuzzyDiffusionFilterPDDO:
         self.image = image
 
     def normalizeTo8Bits(self):
-        self.image = np.multiply(np.divide(self.image,np.max(np.absolute(self.image))),255).reshape((self.Nx, self.Ny))
+        #self.image = np.multiply(np.divide(self.image,np.max(np.absolute(self.image))),255).reshape((self.Nx, self.Ny))
+        self.image = self.image.reshape((self.Nx, self.Ny))
 
     def enhanceContrast(self):
         image = []
@@ -229,11 +230,15 @@ class fuzzyDiffusionFilterPDDO:
             '''print('Here')
             np.savetxt('../data/outputColorImage/RHS2_'+str(iTimeStep)+'.csv',  self.RHS[2], delimiter=",")
             a = input('').split(" ")[0]'''
-            
-
-            #cv2.imwrite('../data/outputColorImage5/denoisedImage'+str(iTimeStep)+'.jpg', gaussian_filter(self.image, sigma=0.2))
+            image = np.divide(self.image,2**8) 
+            # Contrast stretching
+            p0, p1 = np.percentile(image, (10, 99.9))
+            self.image = np.multiply(255,exposure.rescale_intensity(image, in_range=(p0, p1)))
+            #self.image = exposure.rescale_intensity(self.image, in_range=(p0, p1)).astype(int)
+            np.savetxt('../data/output_0.8Mean/'+str(iTimeStep)+'_'+'denoisedImage.csv', self.image)
+            #cv2.imwrite('../data/output/'+str(iTimeStep)+'_'+'denoisedImage.jpg', self.image)
+            #print(type(img_rescale))
             #a = input('').split(" ")[0]
-            cv2.imwrite('../data/output2/'+str(iTimeStep)+'_'+'denoisedImage.jpg', self.image)
             #self.image = self.denoisedImage
 
     def solve(self, image):

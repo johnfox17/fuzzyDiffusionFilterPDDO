@@ -1,8 +1,8 @@
 clear all;
 close all;
 
-pathFolderInit = '../data/output/';
-pathFolderFinal = '../data/output2/';
+pathFolderInit = '../data/output_0.8Mean/';
+pathFolderFinal = '../data/output_0.8Mean/';
 mmssim = [];
 psnr = [];
 
