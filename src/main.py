@@ -10,7 +10,10 @@ import constants
 def main():
     convertToGrayScale = True
     if sys.platform.startswith('linux'):
-        pathToLena = '../data/simData/noisyCameraman.png' 
+        pathToReferenceImage = '../data/simData/Lena.png'
+        pathToImage = '../data/simData/noisyLena.png' 
+                #'../data/simData/cameraman.png'
+                #'../data/simData/noisyCameraman.png'
                 #'../data/simData/noisyLena.png'
                 #'../data/simData/noisyCircle'
                 #'../data/simData/noisyLena.png'
@@ -18,25 +21,29 @@ def main():
         pathToMembershipFunction = '../data/simData/triangularMembershipFunction.csv'
 
     else:
-        pathToLena = \
-            '..\\data\\simData\\noisyCameraman.png' 
+        pathToReferenceImage = '..\\data\\simData\\cameraman.png'
+        pathToImage = '..\\data\\simData\\noisyCameraman.png' 
+            #'..\\data\\simData\\cameraman.png'
             #'..\\data\\simData\\noisyLena.png'
             #'..\\data\\simData\\noisyCircle.png'
             #'..\\data\\simData\\noisyLena.png'
             #'..\\data\\simData\\Lena.png'
         pathToMembershipFunction = '..\\data\\simData\\triangularMembershipFunction.csv'
 
-    image = cv2.imread(pathToLena)
-        
+    image = cv2.imread(pathToImage)
+    referenceImage = cv2.imread(pathToReferenceImage)
+
     if convertToGrayScale:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        cv2.imwrite('../data/simData/noisyLenaGrayScale.jpg', image)
+        referenceImage = cv2.cvtColor(referenceImage, cv2.COLOR_BGR2GRAY)
+        cv2.imwrite('../data/simData/noisyImageGrayScale.jpg', image)
+        cv2.imwrite('../data/simData/referenceImageGrayScale.jpg', referenceImage)
         
         
     fuzzyFilter = fuzzyDiffusionFilterPDDO.fuzzyDiffusionFilterPDDO(pathToMembershipFunction)
     
 
-    fuzzyFilter.solve(image)
+    fuzzyFilter.solve(referenceImage, image)
     #p0 = Process(target=fuzzyFilter.solve, args=(image[:,:,0],0,))
     #p0.start()
     #p0.join()

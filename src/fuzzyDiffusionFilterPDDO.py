@@ -6,6 +6,8 @@ import cv2
 from scipy.ndimage import gaussian_filter
 import math
 from skimage import exposure
+from scipy import signal
+from skimage.exposure import match_histograms
 
 class fuzzyDiffusionFilterPDDO:
     def __init__(self,pathToMembershipFunction):
@@ -46,134 +48,46 @@ class fuzzyDiffusionFilterPDDO:
         neighboringPixels = tree.query_radius(self.coordinateMesh, r = self.dx*self.horizon)
         self.neighboringPixels = neighboringPixels.reshape((self.Nx,self.Ny))
     
-    def addBoundary(self):
-        self.Nx = self.Nx + 2*int(self.horizon)
-        self.Ny = self.Ny + 2*int(self.horizon)
-        self.image = np.pad(self.image,int(self.horizon),mode='symmetric')
-        #self.image = np.pad(self.image,int(self.horizon),'constant')
-    
-    def loadMembershipFunction(self):
-        self.membershipFunction = np.loadtxt(self.pathToMembershipFunction, delimiter=",")
-        
-    def loadGradientMembershipFunctions(self):
-        self.D_neg6 = constants.D_NEG6
-        self.D_neg5 = constants.D_NEG5
-        self.D_neg4 = constants.D_NEG4
-        self.D_neg3 = constants.D_NEG3
-        self.D_neg2 = constants.D_NEG2
-        self.D_neg1 = constants.D_NEG1
-        self.D_0 = constants.D_0
-        self.D_1 = constants.D_1
-        self.D_2 = constants.D_2
-        self.D_3 = constants.D_3
-        self.D_4 = constants.D_4
-        self.D_5 = constants.D_5
-        self.D_6 = constants.D_6
 
-    def assignMembership(self):
-        pixelMemberships = []
-        for iCol in range(self.Nx):
-            for iRow in range(self.Ny):
-                currentPixelMembership = []
-                currentPixelMembership.append(self.image[iRow,iCol])
-                membershipIndex = int(math.floor(self.image[iRow,iCol]))
-                currentPixelMembership.append(list(self.membershipFunction[membershipIndex])[0])
-                currentPixelMembership.append(list(self.membershipFunction[membershipIndex])[1])
-                pixelMemberships.append(currentPixelMembership)
-        self.pixelMemberships = np.array(pixelMemberships)
-
-    def createFuzzyMembershipImage(self):
-        self.fuzzyMembershipImage = np.transpose(np.array(self.pixelMemberships[:,1].reshape((self.Nx,self.Ny))))
-
-    def findFuzzyDerivativeRule(self):
-        D10 = []
-        D01 = []
-        for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
-            for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
-                D10.append(np.sum(np.multiply(self.g10,self.fuzzyMembershipImage[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).flatten()).astype(int))
-                D01.append(np.sum(np.multiply(self.g01,self.fuzzyMembershipImage[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).flatten()).astype(int))
-        self.D10 = np.transpose(np.pad(np.array(D10).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric'))
-        self.D01 = np.transpose(np.pad(np.array(D01).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric'))
-
-        #np.savetxt('../data/output/D10.csv',  self.D10, delimiter=",")
-        #np.savetxt('../data/output/D01.csv',  self.D10, delimiter=",")
-        #print('Here')
-        #a = input('').split(" ")[0]
-        
     def calculateGradient(self):
-        gradient10 = []
-        gradient01 = []
-        for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
-            for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
-                D10 = np.multiply(self.GMask,self.D10[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int).flatten()
-                D01 = np.multiply(self.GMask,self.D01[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int).flatten()
-                L = np.multiply(self.GMask,self.image[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int).flatten()
-                muPrem = np.sum(self.membershipFunction[L,1])#This might have to be changed to include all channels of image
-                gCents10 = []
-                for iD in D10:
-                    gCents10.append(self.gCenter[np.abs(self.gCenter-iD).argmin()])
-                gradient10.append(np.sum(np.multiply(np.array(gCents10), self.membershipFunction[L,1]))/muPrem)
-                gCents01 = []
-                for iD in D01:
-                    gCents01.append(self.gCenter[np.abs(self.gCenter-iD).argmin()])
-                gradient01.append(np.sum(np.multiply(np.array(gCents01), self.membershipFunction[L,1]))/muPrem)
-        self.gradient10 = np.transpose(np.pad(np.array(gradient10).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric'))
-        self.gradient01 = np.transpose(np.pad(np.array(gradient01).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))),int(self.horizon),mode='symmetric'))
-        #self.gradient10 = np.divide(gradient10, np.linalg.norm(gradient10))
-        #self.gradient01 = np.divide(gradient01, np.linalg.norm(gradient01))
+        self.gradient10 = signal.convolve2d(self.image, self.g10, boundary='symm')
+        self.gradient01 = signal.convolve2d(self.image, self.g01, boundary='symm')
+    
     def calculateCoefficients(self):
         coefficients = [] 
-        #K=0.8*np.mean(self.gradient10 + self.gradient01)
+        #K=0.5*np.mean(np.abs(self.gradient10) + np.abs(self.gradient01))
         K=0.8
-        for iCol in range(self.Nx-int(2*self.horizon)):
-            for iRow in range(self.Ny-int(2*self.horizon)):
+        for iCol in range(self.Nx):
+            for iRow in range(self.Ny):
                 iGradientMagnitude = np.sqrt(self.gradient10[iRow,iCol]**2 + self.gradient01[iRow,iCol]**2)
                 #iGradientMagnitude = np.sqrt(self.gradient10[iRow,iCol]**2)
-                coefficients.append(np.exp(-np.power(np.abs(np.divide(iGradientMagnitude,K)),2)))
-                #coefficients.append(1/(1+np.divide(iGradientMagnitude,K)))
-        self.coefficients = np.array(np.pad(np.transpose(np.array(coefficients).reshape((self.Nx-int(2*self.horizon), self.Ny-int(2*self.horizon)))),int(self.horizon),'constant'))
-        #self.coefficients = np.array(np.transpose(np.array(coefficients).reshape((self.Nx-int(2*self.horizon), self.Ny-int(2*self.horizon)))))
-        #self.coefficients = np.divide(coefficients, np.max(coefficients))
+                #coefficients.append(np.exp(-np.power(np.abs(np.divide(iGradientMagnitude,K)),2)))
+                coefficients.append(1/(1+np.divide(iGradientMagnitude,K)))
+        self.coefficients = np.pad(np.array(np.transpose(np.array(coefficients).reshape((self.Nx, self.Ny)))),int(self.horizon),mode='constant')
+        #np.savetxt('../data/outputPDDODerivative3/coefficients.csv',  self.coefficients, delimiter=",")
+        #print('Here')
+        #a = input('').split(" ")[0]
 
     def calculateGradientOfCoefficients(self):
-        gradientCoefficients10 = []
-        gradientCoefficients01 = []
-        for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
-            for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
-                D10 = np.multiply(self.GMask,self.D10[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int).flatten()
-                D01 = np.multiply(self.GMask,self.D01[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int).flatten()
-                L = np.multiply(self.GMask,self.coefficients[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).astype(int).flatten()
-                muPrem = np.sum(self.membershipFunction[L,1])#This might have to be changed to include all channels of image
-                gCents10 = []
-                for iD in D10:
-                    gCents10.append(self.gCenter[np.abs(self.gCenter-iD).argmin()])
-                gradientCoefficients10.append(np.sum(np.multiply(np.array(gCents10), self.membershipFunction[L,1]))/muPrem)
-                gCents01 = []
-                for iD in D01:
-                    gCents01.append(self.gCenter[np.abs(self.gCenter-iD).argmin()])
-                gradientCoefficients01.append(np.sum(np.multiply(np.array(gCents01), self.membershipFunction[L,1]))/muPrem)
-
-        self.gradientCoefficients10 = np.transpose(np.array(gradientCoefficients10).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))))
-        self.gradientCoefficients01 = np.transpose(np.array(gradientCoefficients01).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))))
-        #self.gradientCoefficients10 = np.divide(gradientCoefficients10, np.linalg.norm(gradientCoefficients10))
-        #self.gradientCoefficients01 = np.divide(gradientCoefficients01, np.linalg.norm(gradientCoefficients01))
-        #a = input('').split(" ")[0]
+        self.gradientCoefficients10 = np.pad(signal.convolve2d(self.coefficients, self.g10, boundary='symm', mode='same'),int(self.horizon),'constant')
+        self.gradientCoefficients01 = np.pad(signal.convolve2d(self.coefficients, self.g01, boundary='symm', mode='same'),int(self.horizon),'constant')
+        #self.gradientCoefficients10 = np.pad(self.coefficients,int(self.horizon),'constant')
+        #self.gradientCoefficients01 = np.pad(self.coefficients,int(self.horizon),'constant')
 
     def solveRHS(self):
         #self.RHS = np.multiply(self.gradient10,self.gradientCoefficients10) + np.multiply(self.gradient01,self.gradientCoefficients01)
         #self.RHS = np.multiply(self.gradient10,self.coefficients) + np.multiply(self.gradient01,self.coefficients)
         RHS = []
         gradient = self.gradient10 + self.gradient01
-        for iCol in range(int(self.horizon),self.Nx-int(self.horizon)):
-            for iRow in range(int(self.horizon),self.Ny-int(self.horizon)):
-                RHS.append(np.sum(np.multiply(np.multiply(self.GMask,gradient[iRow-int(self.horizon-2):iRow+int(self.horizon-2)+1,iCol-int(self.horizon-2):iCol+int(self.horizon-2)+1]),self.coefficients[iRow-int(self.horizon-2):iRow+int(self.horizon-2)+1,iCol-int(self.horizon-2):iCol+int(self.horizon-2)+1])))
+        for iCol in range(int(self.horizon),self.Nx+2):
+            for iRow in range(int(self.horizon),self.Ny+2):
+                RHS.append(np.sum(np.multiply(np.multiply(self.GMask,self.gradient10[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]),self.coefficients[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]))+ np.sum(np.multiply(np.multiply(self.GMask,self.gradient01[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]),self.coefficients[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1])))
+                #RHS.append(np.sum(np.multiply(np.multiply(self.rhsMask,self.gradient10[iRow-int(self.horizon-2):iRow+int(self.horizon-2)+1,iCol-int(self.horizon-2):iCol+int(self.horizon-2)+1]),self.gradientCoefficients10[iRow-int(self.horizon-2):iRow+int(self.horizon-2)+1,iCol-int(self.horizon-2):iCol+int(self.horizon-2)+1]))+ np.sum(np.multiply(np.multiply(self.rhsMask,self.gradient01[iRow-int(self.horizon-2):iRow+int(self.horizon-2)+1,iCol-int(self.horizon-2):iCol+int(self.horizon-2)+1]),self.gradientCoefficients01[iRow-int(self.horizon-2):iRow+int(self.horizon-2)+1,iCol-int(self.horizon-2):iCol+int(self.horizon-2)+1])))
         
-        self.RHS = np.transpose(np.array(RHS).reshape((self.Nx-int(2*self.horizon),self.Ny-int(2*self.horizon))))
+        self.RHS = np.transpose(np.array(RHS).reshape((self.Nx,self.Ny)))
 
 
     def checkSaturation(self):       
-        self.Nx = self.Nx - 2*int(self.horizon)
-        self.Ny = self.Ny - 2*int(self.horizon)
         image = self.denoisedImage.flatten()
         self.saturated = False
         while (np.max(np.absolute(image))>255 ):
@@ -195,33 +109,26 @@ class fuzzyDiffusionFilterPDDO:
     def solveDifferentialEquation(self):
         noisyImage = self.image
         #print(np.shape(self.image))
-        self.addBoundary()
-        #print('Add Boundary '+ str(np.shape(self.image)))
-        self.assignMembership()
-        #print('Assign Membership' + str(np.shape(self.image)))
-        self.createFuzzyMembershipImage()
-        #print('Create Fuzzy Membership '+ str(np.shape(self.image)))
-        self.findFuzzyDerivativeRule()
-        #print('findFuzzyDerivativeRule '+ str(np.shape(self.image)))
         self.calculateGradient()
-        #print('calculateGradient'+str(np.shape(self.image)))
         self.calculateCoefficients()
-        #print('calculateCoefficients'+str(np.shape(self.image)))
-        self.calculateGradientOfCoefficients()
-        #print('calculateGradientOfCoefficients '+str(np.shape(self.image)))
+        self.calculateGradientOfCoefficients()        
         self.solveRHS()
         #print('solveRHS'+str(np.shape(self.image)))
         self.denoisedImage = noisyImage + self.dt*self.lambd*self.RHS
 
     def timeIntegrate(self):
         timeSteps = int(self.finalTime/self.dt)
-        timeSteps = 1500
+        timeSteps = 3000
         
         for iTimeStep in range(timeSteps+1):
             print(iTimeStep)
             self.solveDifferentialEquation()           
             self.checkSaturation()
             self.normalizeTo8Bits()
+            #if iTimeStep % 100 == 0:
+            #p0, p1 = np.percentile(self.image, (10, 99.9))
+            #self.image = np.multiply(255,exposure.rescale_intensity(self.image, in_range=(p0, p1)))
+            self.image = match_histograms(self.image, self.referenceImage)
             #np.savetxt('../data/outputColorImage7/RHS.csv',  self.RHS, delimiter=",")
             #print('Here')
             #a = input('').split(" ")[0]
@@ -230,23 +137,22 @@ class fuzzyDiffusionFilterPDDO:
             '''print('Here')
             np.savetxt('../data/outputColorImage/RHS2_'+str(iTimeStep)+'.csv',  self.RHS[2], delimiter=",")
             a = input('').split(" ")[0]'''
-            image = np.divide(self.image,2**8) 
+            #image = np.divide(self.image,2**8) 
             # Contrast stretching
-            p0, p1 = np.percentile(image, (10, 99.9))
-            self.image = np.multiply(255,exposure.rescale_intensity(image, in_range=(p0, p1)))
+            #p0, p1 = np.percentile(image, (10, 99.9))
+            #image = np.multiply(255,exposure.rescale_intensity(image, in_range=(p0, p1)))
             #self.image = exposure.rescale_intensity(self.image, in_range=(p0, p1)).astype(int)
-            np.savetxt('../data/output_0.8Mean/'+str(iTimeStep)+'_'+'denoisedImage.csv', self.image)
+            np.savetxt('../data/outputPDDODerivative8/'+str(iTimeStep)+'_'+'denoisedImage.csv', self.image)
             #cv2.imwrite('../data/output/'+str(iTimeStep)+'_'+'denoisedImage.jpg', self.image)
             #print(type(img_rescale))
             #a = input('').split(" ")[0]
             #self.image = self.denoisedImage
 
-    def solve(self, image):
+    def solve(self, referenceImage, image):
+        self.referenceImage = referenceImage
         self.image = image
         self.createPDDOKernelMesh()
         self.findNeighboringPixels()
-        self.loadMembershipFunction()
-        self.loadGradientMembershipFunctions()
         
         self.timeIntegrate()
         #a = input('').split(" ")[0]

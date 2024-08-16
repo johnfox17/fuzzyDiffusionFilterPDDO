@@ -1,8 +1,8 @@
 clear all;
 close all;
 
-pathFolderInit = '../data/output_0.8Mean/';
-pathFolderFinal = '../data/output_0.8Mean/';
+pathFolderInit = '../data/outputPDDODerivative8/';
+pathFolderFinal = '../data/outputPDDODerivative8/';
 mmssim = [];
 psnr = [];
 

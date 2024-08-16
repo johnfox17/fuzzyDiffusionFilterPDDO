@@ -3,22 +3,27 @@ close all;
 
 addpath('../data/simData/')
 
-lena = imread('../data/simData/cameraman.png');
+lena = imread('../data/simData/referenceImageGrayScale.jpg');
 % lena = rgb2gray(lena);
 figure; imagesc(lena)
 colormap gray
 figure;histogram(lena)
-% 
-noisyLena = imread('../data/simData/noisyLenaGrayScale.jpg');
+
+noisyLena = imread('../data/simData/noisyImageGrayScale.jpg');
 figure; imagesc(noisyLena)
 colormap gray
 figure;histogram(noisyLena)
-% noisyLena = imgaussfilt(noisyLena,0.7);
-% figure; imagesc(noisyLena)
-% colormap gray
 
-% noisyImage0 = table2array(readtable('../data/output/img_rescale.csv'));
-% figure; imagesc(noisyImage0)
+
+% noisyImage0 = table2array(readtable('../data/outputPDDODerivative3/coefficients.csv'));
+% figure; imagesc(abs(noisyImage0))
+% colormap gray
+% colorbar
+% figure;histogram(noisyImage0)
+% % 
+% 
+% noisyImage0 = table2array(readtable('../data/outputPDDODerivative/gradientCoefficients01.csv'));
+% figure; imagesc(abs(noisyImage0))
 % colormap gray
 % colorbar
 % figure;histogram(noisyImage0)
@@ -42,8 +47,11 @@ figure;histogram(noisyLena)
 
 % noisyLena = imread('../data/output/2_denoisedImage.jpg');
 %noisyLena1 = imread('../data/output/0_denoisedImage.jpg');
-% noisyLena = table2array(readtable('../data/output_0.8Mean/8_denoisedImage.csv'));
-noisyLena1 = table2array(readtable('../data/output_0.8Mean/1500_denoisedImage.csv'));
+% noisyLena = table2array(readtable('../data/outputPDDODerivative8/5_denoisedImage.csv'));
+noisyLena1 = table2array(readtable('../data/outputPDDODerivative8/2830_denoisedImage.csv'));
+
+% noisyLena1 = uint8(table2array(readtable('../data/outputPDDODerivative4/15_denoisedImage.csv')));
+%imwrite(noisyLena1,"../data/outputPDDODerivative3/rescaledImage/denoisedImage.jpg")
 figure; histogram(noisyLena1)
 % noisyLena1 = imadjustn(noisyLena1,[0.1 0.9]);
 % noisyLena1(noisyLena1>150) =150;
@@ -75,19 +83,20 @@ for i = 1:1
     title("Channel"+string(i) )
     
     ax3 = nexttile;
+    %imagesc(imgaussfilt(noisyLena1(:,:,i),0.4))
     imagesc(noisyLena1(:,:,i))
     title("Channel"+string(i))
     colormap gray;
     colorbar
 
     ax4 = nexttile;
-    imagesc(noisyLena1(:,:,i)-double(noisyLena(:,:,i)))
+    imagesc(abs(noisyLena1(:,:,i)-double(noisyLena(:,:,i))))
     title("Channel"+string(i))
     % colormap gray;
     colorbar
 
     linkaxes([ax1 ax2 ax3 ax4])
-    figure; surf(noisyLena1(:,:,i)-double(noisyLena(:,:,i)))
+    figure; surf(noisyLena1(:,:,i))
 end
 
 figure;

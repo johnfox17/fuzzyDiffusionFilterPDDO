@@ -2,6 +2,8 @@ import numpy as np
 
 L1 = 1
 L2 = 1
+#NX = 512
+#NY = 512
 NX = 256
 NY = 256
 NUMCHANNELS = 3
@@ -11,7 +13,7 @@ q = 2
 Dn = 2**8-1
 FINALTIME = 100
 #DELTAT = 0.004
-DELTAT = 0.001
+DELTAT = 0.000001
 LAMBDA = 0.25
 #THRESHOLDS = [0.01, 0.02, 0.03, 0.05, 0.08, 0.09, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5]
 THRESHOLDS = [0.2]

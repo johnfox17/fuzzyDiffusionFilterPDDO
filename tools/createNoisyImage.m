@@ -2,7 +2,7 @@ clear all;
 close all;
 addpath('../data/simData');
 %read image
-lena  = imread('cameraman.png');
+lena  = imread('Lena.png');
 %noisyLena1  = imread('noisyLena.png');
 % [numRows,numCols,numChannels] = size(lena);
 % noise = [];
@@ -24,11 +24,11 @@ lena  = imread('cameraman.png');
 %noisyLena = imnoise(lena,'gaussian');
 %noisyLena = awgn(single(lena(:)),10,'measured');
 %noisyLena = reshape(noisyLena,[512 512]);
-%noisyLena = imnoise(lena,'salt & pepper');
+% noisyLena = imnoise(lena,'salt & pepper',0.01);
 % noisyLena = zeros(512,512,3);
 mean = 0;
-var_gauss = 0.003;
-noisyLena = imnoise(lena,'gaussian',mean,var_gauss);
+var_gauss = 0.005;
+noisyLena = imnoise(rgb2gray(lena),'gaussian',mean,var_gauss);
 
 
 % figure; imagesc(lena)
@@ -47,5 +47,5 @@ colormap gray
 %figure; imagesc(rgb2gray(noisyLena))
 figure; imagesc(noisyLena)
 colormap gray
-imwrite(noisyLena,'../data/simData/noisyCameraman.png')
+imwrite(noisyLena,'../data/simData/noisyLena.png')
 
