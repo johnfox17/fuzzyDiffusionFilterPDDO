@@ -3,122 +3,133 @@ close all;
 
 addpath('../data/simData/')
 
-lena = imread('../data/simData/Lena.png');
-lena = rgb2gray(lena);
+lena = imread('../data/simData/referenceImageGrayScale.jpg');
+% lena = rgb2gray(lena);
 figure; imagesc(lena)
 colormap gray
+figure;histogram(lena)
 
-noisyLena = imread('../data/simData/noisyLena.png');
+noisyLena = imread('../data/simData/noisyImageGrayScale.jpg');
 figure; imagesc(noisyLena)
 colormap gray
+figure;histogram(noisyLena)
 
 
-image0 = table2array(readtable('../data/outputColorImage/image0.csv'));
-figure; imagesc(abs(reshape(image0,[512 512]).'))
-colormap gray
-colorbar
-
-image1 = table2array(readtable('../data/outputColorImage/image1.csv'));
-figure; imagesc(abs(reshape(image1,[512 512]).'))
-colormap gray
-colorbar
-
-image2 = table2array(readtable('../data/outputColorImage/image2.csv'));
-figure; imagesc(abs(reshape(image2,[512 512]).'))
-colormap gray
-colorbar
-
-figure; imagesc(abs(image0.'+image1.'+image2.'))
-colormap gray
-colorbar
-
-noisyLena1 = imread('../data/outputColorImage/threshold_0.2/denoisedImage100.jpg');
-figure; imagesc(noisyLena1)
-colormap gray
-
-figure; imagesc(noisyLena(:,:,1) - noisyLena1(:,:,1))
-figure; imagesc(noisyLena(:,:,2) - noisyLena1(:,:,2))
-figure; imagesc(noisyLena(:,:,3) - noisyLena1(:,:,3))
-% 
-% noisyLena2 = imread('../data/outputColorImage/threshold_0.2/denoisedImage8.jpg');
-% figure; imagesc(noisyLena2)
-% colormap gray
-
-noisyImage = table2array(readtable("../data/outputColorImage/noisyImage.csv"));
-figure; 
-imagesc(noisyImage)
-colorbar
-
-RHS = table2array(readtable("../data/outputColorImage/RHS.csv"));
-figure; 
-imagesc(RHS)
-colorbar
-
-denoisedImage = noisyImage + RHS; 
+% noisyImage0 = table2array(readtable('../data/outputPDDODerivative3/coefficients.csv'));
+% figure; imagesc(abs(noisyImage0))
 % colormap gray
 % colorbar
-% figure;
-% histogram(DerivativeRule)
+% figure;histogram(noisyImage0)
+% % 
 % 
-% DerivativeRule2 = table2array(readtable("../data/output/DerivativeRule2.csv"));
-% figure; 
-% imagesc(DerivativeRule2.')
+% noisyImage0 = table2array(readtable('../data/outputPDDODerivative/gradientCoefficients01.csv'));
+% figure; imagesc(abs(noisyImage0))
 % colormap gray
 % colorbar
-% figure;
-% histogram(DerivativeRule2)
-%THRESHOLDS = [0.01, 0.1, 0.2, 0.3, 0.35, 0.4, 0.5];
+% figure;histogram(noisyImage0)
 
 
+% noisyImage0 = table2array(readtable('../data/output/D01.csv'));
+% figure; imagesc(noisyImage0)
+% colormap gray
+% colorbar
+% 
+% noisyImage1 = table2array(readtable('../data/outputColorImage7/RHS.csv'));
+% figure; imagesc(abs(noisyImage1))
+% colormap gray
+% colorbar
+
+% noisyImage1 = table2array(readtable('../data/outputColorImage7/gradientCoefficients01.csv'));
+% figure; imagesc(abs(noisyImage1))
+% colormap gray
+% colorbar
 
 
-THRESHOLDS = 0.15;
-timeSteps = ["0","100","150","200","300","500","700", "800", "900", "1000"];
-%timeSteps = ["641"];
-for iThreshold = 1:length(THRESHOLDS)
-    pathFolder = "../data/output/threshold_"+string(THRESHOLDS(iThreshold))+"/";
-    %pathFolder = "../data/output/threshold_"+string(THRESHOLDS(iThreshold))+"/";
-    for iTimeStep = 1:length(timeSteps)
-        denoisedImage = table2array(readtable(pathFolder+"denoisedImage"+timeSteps(iTimeStep)+".csv"));
-        gradient = table2array(readtable(pathFolder+"gradient"+timeSteps(iTimeStep)+".csv"));
-        gradient = reshape(gradient, [512 512]).';
-        RHS = table2array(readtable(pathFolder+"RHS"+timeSteps(iTimeStep)+".csv"));
-        localSmoothness = table2array(readtable(pathFolder+"localSmoothness"+timeSteps(iTimeStep)+".csv"));
-        
-        figure;
-        tiledlayout(2,2);
+% noisyLena = imread('../data/output/2_denoisedImage.jpg');
+%noisyLena1 = imread('../data/output/0_denoisedImage.jpg');
+% noisyLena = table2array(readtable('../data/outputPDDODerivative3/11700_denoisedImage.csv'));
+noisyLena1 = table2array(readtable('../data/outputPDDODerivative3/11800_denoisedImage.csv'));
+
+% noisyLena1 = uint8(table2array(readtable('../data/outputPDDODerivative4/15_denoisedImage.csv')));
+%imwrite(noisyLena1,"../data/outputPDDODerivative3/rescaledImage/denoisedImage.jpg")
+figure; histogram(noisyLena1)
+% noisyLena1 = imadjustn(noisyLena1,[0.1 0.9]);
+% noisyLena1(noisyLena1>150) =150;
+% noisyLena1 = imgaussfilt(noisyLena1,0.5);
+% noisyLena1 = imgaussfilt(noisyLena1,0.7);
+
+% noisyLena1 = imadjustn(noisyLena1,[0.025 0.85]);
+
+% n = 2;  
+% Idouble = im2double(noisyLena1); 
+% avg = mean2(Idouble);
+% sigma = std2(Idouble);
+
+% noisyLena1 = imadjustn(noisyLena1,[avg-n*sigma avg+n*sigma],[]);
+for i = 1:1
+    figure;
+    tiledlayout(1,4);
     
-        ax1 = nexttile;
-        imagesc(denoisedImage)
-        colormap gray
-        colorbar
-        title("Lena")
+    ax1 = nexttile;
+    imagesc(lena(:,:,i))
+    colormap gray
+    colorbar
+    title("Channel"+string(i) )
     
-        ax2 = nexttile;
-        imagesc(gradient)
-        title('Gradient ')
-        colormap gray;
-        colorbar
+    ax2 = nexttile;
+    imagesc(noisyLena(:,:,i))
+    colormap gray
+    colorbar
+    title("Channel"+string(i) )
     
-        ax3 = nexttile;
-        imagesc(RHS)
-        title('Right Hand Side')
-        colormap gray;
-        colorbar
-        
-        ax4 = nexttile;
-        imagesc(localSmoothness)
-        title('Local Smoothness')
-        colormap gray;
-        colorbar
-        
-        linkaxes([ax1 ax2 ax3 ax4])
-        figure;
-        surf(denoisedImage)
-    end
+    ax3 = nexttile;
+    % imagesc(imgaussfilt(noisyLena1(:,:,i),0.7))
+    imagesc(noisyLena1(:,:,i))
+    title("Channel"+string(i))
+    colormap gray;
+    colorbar
+
+    ax4 = nexttile;
+    imagesc(abs(noisyLena1(:,:,i)-double(noisyLena(:,:,i))))
+    title("Channel"+string(i))
+    % colormap gray;
+    colorbar
+
+    linkaxes([ax1 ax2 ax3 ax4])
+    figure; surf(noisyLena1(:,:,i))
 end
 
+figure;
+tiledlayout(1,4);
+ax1 = nexttile;
+imagesc(lena)
+colorbar
+colormap gray
+title("Original Lena" )
 
+ax2 = nexttile;
+imagesc(noisyLena)
+colorbar
+colormap gray
+title("Noisy Lena" )
+
+ax3 = nexttile;
+imagesc(noisyLena1)
+colorbar
+colormap gray
+title("Denoised Lena")
+
+ax4 = nexttile;
+% imagesc(imadjustn(imgaussfilt(noisyLena1,0.9)))
+% imagesc(imgaussfilt(noisyLena1,0.5))
+% imagesc(imgaussfilt(imadjustn(noisyLena1),0.9))
+imagesc(imadjustn(noisyLena1,[0.05 0.95]))
+% imagesc(imadjustn(noisyLena1))
+colorbar
+colormap gray
+title("Denoised Lena Contrast")
+shading interp
+linkaxes([ax1 ax2 ax3 ax4])
 
 
 

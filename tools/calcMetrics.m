@@ -1,30 +1,31 @@
-close all;
+% close all;
 clear all;
 addpath('../data/simData/')
+pathFolder = '../data/outputPDDODerivative8/';
+
+noisyLena = single(imread('noisyLenaGrayScale.jpg'));
+% lena = rgb2gray(imread('Lena.png'));
+lena = imread('cameraman.png');
 
 
-noisyLena = single(imread('noisyLena.png'));
-lena = imread('Lena.png');
-lena = rgb2gray(lena);
-%THRESHOLDS = [0.01, 0.02, 0.03, 0.05, 0.08, 0.09, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5];
-%THRESHOLDS = [0.01, 0.02, 0.03, 0.05, 0.08, 0.09, 0.1, 0.15, 0.2];
-THRESHOLDS = [0.2];
-for iThreshold = 1:length(THRESHOLDS)
-    pathFolder = "../data/output4/threshold_"+string(THRESHOLDS(iThreshold))+"/";
-    mssim = [];
-    PSNR = [];
-    for iImage = 0:1000
-       
-        currentImage = table2array(readtable(pathFolder+"denoisedImage"+string(iImage)+".csv"));
-        [mssim_0, ssim_map_0] = ssim_index(lena, currentImage);
-        mssim = [mssim, mssim_0];
+mssim = [];
+PSNR = [];
+
+for iImage = 0:78
+   
+    %currentImage = single(imread(pathFolder+string(iImage)+"_"+"denoisedImage.jpg"));
+    currentImage = table2array(readtable(pathFolder+string(iImage)+'_'+'denoisedImage.csv'));
+    % [currentMssim, currentSsim_map] = ssim_index(lena,imadjustn(currentImage) );
+   [currentMssim, currentSsim_map] = ssim_index(lena,currentImage );
+    mssim = [mssim, currentMssim];
     
-        currentPSNR = 10.*log10(255^2/(norm(single(lena(:))-currentImage(:)))^2);
-        PSNR = [PSNR, currentPSNR];
-    end
-    writematrix(mssim, pathFolder+"mssim.csv");
-    writematrix(PSNR, pathFolder+"PSNR.csv");
+    currentPSNR = 10.*log10(255^2/(norm(single(lena(:))-currentImage(:)))^2);
+    PSNR = [PSNR, currentPSNR];
+    
 end
+writematrix(mssim, pathFolder+"mssim.csv");
+writematrix(PSNR, pathFolder+"PSNR.csv");
+
 
 
 

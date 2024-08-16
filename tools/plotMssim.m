@@ -1,34 +1,23 @@
-%clear all;
-%close all;
+clear all;
+close all;
 
-THRESHOLDS = [0.01, 0.02, 0.03, 0.05, 0.08, 0.09, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5];
-%THRESHOLDS = [0.01, 0.02, 0.03, 0.05, 0.08, 0.09, 0.1, 0.15, 0.2];
-THRESHOLDS = [0.2];
+pathFolderInit = '../data/outputPDDODerivative8/';
+pathFolderFinal = '../data/outputPDDODerivative8/';
 mmssim = [];
 psnr = [];
 
-for iThreshold = 1:length(THRESHOLDS)
-    pathFolder = "../data/output4/threshold_"+string(THRESHOLDS(iThreshold))+"/";
-    currentMSSIM = table2array(readtable(pathFolder+"mssim.csv"));
-    currentPSNR = table2array(readtable(pathFolder+"PSNR.csv"));
-    mmssim = [mmssim; currentMSSIM];
-    psnr = [psnr; currentPSNR];    
-end
 
-figure; hold on;
-for iThreshold = 1:length(THRESHOLDS)
-   plot(mmssim(iThreshold,:))
-end
-%ylim([0.51 0.52])
-grid on;
-%legend('0.01', '0.02', '0.03', '0.05', '0.08', '0.09', '0.1', '0.15', '0.2', '0.25', '0.3', '0.35', '0.4', '0.5');
-%legend('0.01', '0.02', '0.03', '0.05', '0.08', '0.09', '0.1', '0.15', '0.2');
+   
+MSSIMInit = table2array(readtable(pathFolderInit+"mssim.csv"));
+MSSIMFinal = table2array(readtable(pathFolderFinal+"mssim.csv"));
+figure; plot(MSSIMInit,'o'); hold on; plot(MSSIMFinal,'*');
+title('MSSIM'); grid on;
 
-figure; hold on;
-for iThreshold = 1:length(THRESHOLDS)
-    plot(psnr(iThreshold,:))
-end
-grid on;
-%legend('0.01', '0.02', '0.03', '0.05', '0.08', '0.09', '0.1', '0.15', '0.2', '0.25', '0.3', '0.35', '0.4', '0.5');
-%legend('0.01', '0.02', '0.03', '0.05', '0.08', '0.09', '0.1', '0.15', '0.2');
+
+PSNRInit = table2array(readtable(pathFolderInit+"PSNR.csv"));
+PSNRFinal = table2array(readtable(pathFolderFinal+"PSNR.csv"));
+figure; plot(PSNRInit,'o'); hold on; plot(PSNRFinal,'*')
+title('PSNR'); grid on;
+
+
 
