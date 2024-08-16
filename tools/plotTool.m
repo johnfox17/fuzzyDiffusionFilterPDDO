@@ -47,8 +47,8 @@ figure;histogram(noisyLena)
 
 % noisyLena = imread('../data/output/2_denoisedImage.jpg');
 %noisyLena1 = imread('../data/output/0_denoisedImage.jpg');
-% noisyLena = table2array(readtable('../data/outputPDDODerivative8/5_denoisedImage.csv'));
-noisyLena1 = table2array(readtable('../data/outputPDDODerivative8/2830_denoisedImage.csv'));
+% noisyLena = table2array(readtable('../data/outputPDDODerivative3/11700_denoisedImage.csv'));
+noisyLena1 = table2array(readtable('../data/outputPDDODerivative3/11800_denoisedImage.csv'));
 
 % noisyLena1 = uint8(table2array(readtable('../data/outputPDDODerivative4/15_denoisedImage.csv')));
 %imwrite(noisyLena1,"../data/outputPDDODerivative3/rescaledImage/denoisedImage.jpg")
@@ -83,7 +83,7 @@ for i = 1:1
     title("Channel"+string(i) )
     
     ax3 = nexttile;
-    %imagesc(imgaussfilt(noisyLena1(:,:,i),0.4))
+    % imagesc(imgaussfilt(noisyLena1(:,:,i),0.7))
     imagesc(noisyLena1(:,:,i))
     title("Channel"+string(i))
     colormap gray;

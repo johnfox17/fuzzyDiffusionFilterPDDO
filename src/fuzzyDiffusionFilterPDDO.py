@@ -118,7 +118,7 @@ class fuzzyDiffusionFilterPDDO:
 
     def timeIntegrate(self):
         timeSteps = int(self.finalTime/self.dt)
-        timeSteps = 3000
+        timeSteps = 30000
         
         for iTimeStep in range(timeSteps+1):
             print(iTimeStep)
@@ -128,7 +128,7 @@ class fuzzyDiffusionFilterPDDO:
             #if iTimeStep % 100 == 0:
             #p0, p1 = np.percentile(self.image, (10, 99.9))
             #self.image = np.multiply(255,exposure.rescale_intensity(self.image, in_range=(p0, p1)))
-            self.image = match_histograms(self.image, self.referenceImage)
+            #self.image = match_histograms(self.image, self.referenceImage)
             #np.savetxt('../data/outputColorImage7/RHS.csv',  self.RHS, delimiter=",")
             #print('Here')
             #a = input('').split(" ")[0]
@@ -142,7 +142,9 @@ class fuzzyDiffusionFilterPDDO:
             #p0, p1 = np.percentile(image, (10, 99.9))
             #image = np.multiply(255,exposure.rescale_intensity(image, in_range=(p0, p1)))
             #self.image = exposure.rescale_intensity(self.image, in_range=(p0, p1)).astype(int)
-            np.savetxt('../data/outputPDDODerivative8/'+str(iTimeStep)+'_'+'denoisedImage.csv', self.image)
+            if iTimeStep % 100 == 0:
+                image = match_histograms(self.image, self.referenceImage)
+                np.savetxt('../data/outputPDDODerivative3/'+str(iTimeStep)+'_'+'denoisedImage.csv', image)
             #cv2.imwrite('../data/output/'+str(iTimeStep)+'_'+'denoisedImage.jpg', self.image)
             #print(type(img_rescale))
             #a = input('').split(" ")[0]

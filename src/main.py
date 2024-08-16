@@ -10,8 +10,8 @@ import constants
 def main():
     convertToGrayScale = True
     if sys.platform.startswith('linux'):
-        pathToReferenceImage = '../data/simData/Lena.png'
-        pathToImage = '../data/simData/noisyLena.png' 
+        pathToReferenceImage = '../data/simData/cameraman.png'
+        pathToImage = '../data/simData/noisyCameraman.png' 
                 #'../data/simData/cameraman.png'
                 #'../data/simData/noisyCameraman.png'
                 #'../data/simData/noisyLena.png'
