@@ -1,11 +1,8 @@
 import sys
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 import fuzzyDiffusionFilterPDDO
 import constants
-#from multiprocessing import Process
-#from multiprocessing import Pool, TimeoutError
 
 def main():
     convertToGrayScale = True
@@ -41,44 +38,9 @@ def main():
         
         
     fuzzyFilter = fuzzyDiffusionFilterPDDO.fuzzyDiffusionFilterPDDO(pathToMembershipFunction)
-    
-
     fuzzyFilter.solve(referenceImage, image)
-    #p0 = Process(target=fuzzyFilter.solve, args=(image[:,:,0],0,))
-    #p0.start()
-    #p0.join()
-
-    #p1 = Process(target=fuzzyFilter.solve, args=(image[:,:,1],1,))
-    #p1.start()
-    #p1.join()
-
-    #p2 = Process(target=fuzzyFilter.solve, args=(image[:,:,2],2,))
-    #p2.start()
-    #p2.join()
     
-    #p0.join()
-    #p1.join()
-    #p2.join()
-    print('Done')
-    #print(np.shape(image[:,:,0]))
-    #fuzzyFilter.solve(image)
-
-
-
-
-
-    #imagePlot = plt.imshow(image, cmap='gray', vmin=0, vmax=255)
-    #plt.show()
-    #signals = createSignals.createSignals()
-    #signals.solve()
-    
-
-    #np.savetxt('..\\data\\localSmoothness.csv',  fuzzyFilter.localSmoothness, delimiter=",")
-    #np.savetxt('..\\data\\generalAverage.csv',  fuzzyFilter.generalAverage, delimiter=",")
-    #np.savetxt('..\\data\\denoisedImages.csv',  fuzzyFilter.denoisedImages, delimiter=",")
-    #np.savetxt('..\\data\\neighboringPixels.csv',  fuzzyFilter.neighboringPixels, delimiter=",")
-    #print(fuzzyFilter.neighboringPixels)
-    #np.savetxt('/home/doctajfox/Documents/Thesis/1DPDDOKernels/data/xi2_2.csv', PDDOKernel2_2.xis, delimiter=",")
+    print('Done with simulation')
 
 
 if __name__ == "__main__":

@@ -42,13 +42,13 @@ title("Noisy Image" )
 
 ax3 = nexttile;
 imagesc(imgaussfilt(noisyLena0,0.6))
-title("Denoised Image")
+title("Denoised Image 0")
 colormap gray;
 colorbar
 
 ax4 = nexttile;
 imagesc(fuzzySimilarityImage0)
-title("Fuzzy Similarity Image")
+title("Fuzzy Similarity Image 0")
 colormap gray;
 colorbar
 
@@ -57,8 +57,8 @@ figure; surf(noisyLena0)
 
 
 
-fuzzySimilarityImage1 = table2array(readtable('../data/output/1_fuzzySimilarityImage.csv')); 
-noisyLena1 = table2array(readtable('../data/output/1_denoisedImage.csv'));
+fuzzySimilarityImage1 = table2array(readtable('../data/output/100_fuzzySimilarityImage.csv')); 
+noisyLena1 = table2array(readtable('../data/output/100_denoisedImage.csv'));
 figure; histogram(noisyLena1)
 
 figure;
@@ -78,13 +78,13 @@ title("Noisy Image" )
 
 ax7 = nexttile;
 imagesc(imgaussfilt(noisyLena1,0.6))
-title("Denoised Image")
+title("Denoised Image 1")
 colormap gray;
 colorbar
 
 ax8 = nexttile;
 imagesc(fuzzySimilarityImage1)
-title("Fuzzy Similarity Image")
+title("Fuzzy Similarity Image 1")
 colormap gray;
 colorbar
 
@@ -103,7 +103,7 @@ colorbar
 
 ax10 = nexttile;
 imagesc(fuzzySimilarityImage0)
-title("Fuzzy Similarity Image")
+title("Fuzzy Similarity Image 0")
 colormap gray;
 colorbar
 
@@ -115,12 +115,17 @@ colorbar
 
 ax12 = nexttile;
 imagesc(fuzzySimilarityImage1)
-title("Fuzzy Similarity Image")
+title("Fuzzy Similarity Image 1")
 colormap gray;
 colorbar
 
 linkaxes([ax9 ax10 ax11 ax12])
 
+
+figure;
+imagesc(noisyLena0-noisyLena1)
+colormap gray;
+colorbar
 
 figure;
 imagesc(abs(fuzzySimilarityImage0-fuzzySimilarityImage1))

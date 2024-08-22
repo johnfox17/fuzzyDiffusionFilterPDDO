@@ -1,11 +1,6 @@
 import constants
 import numpy as np
-from sklearn.neighbors import KDTree
-from PIL import Image
 import cv2
-from scipy.ndimage import gaussian_filter
-import math
-from skimage import exposure
 from scipy import signal
 from skimage.exposure import match_histograms
 
@@ -61,7 +56,6 @@ class fuzzyDiffusionFilterPDDO:
         for iCol in range(int(self.horizon),self.Nx+2):
             for iRow in range(int(self.horizon),self.Ny+2):
                 RHS.append(np.sum(np.multiply(np.multiply(self.GMask,gradient[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]),similarity[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1])))
-        
         self.RHS = np.transpose(np.array(RHS).reshape((self.Nx,self.Ny)))
 
     def solveDifferentialEquation(self):
@@ -71,10 +65,9 @@ class fuzzyDiffusionFilterPDDO:
         self.solveRHS()
         self.denoisedImage = noisyImage + self.dt*self.lambd*self.RHS
 
-
     def timeIntegrate(self):
         timeSteps = int(self.finalTime/self.dt)
-        timeSteps = 50
+        timeSteps = 20
         
         for iTimeStep in range(timeSteps+1):
             print(iTimeStep)
@@ -82,14 +75,9 @@ class fuzzyDiffusionFilterPDDO:
             self.image = match_histograms(self.image, self.referenceImage)
             np.savetxt('../data/output/'+str(iTimeStep)+'_'+'fuzzySimilarityImage.csv', self.similarityImage)
             np.savetxt('../data/output/'+str(iTimeStep)+'_'+'denoisedImage.csv', self.image)
-            #cv2.imwrite('../data/output/'+str(iTimeStep)+'_'+'denoisedImage.jpg', self.image)
-            #print(type(img_rescale))
-            #a = input('').split(" ")[0]
-            #self.image = self.denoisedImage
 
     def solve(self, referenceImage, image):
         self.referenceImage = referenceImage
         self.image = image
         self.loadMembershipFunction()
         self.timeIntegrate()
-        #a = input('').split(" ")[0]
