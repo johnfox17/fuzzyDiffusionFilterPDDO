@@ -41,8 +41,8 @@ class fuzzyDiffusionFilterPDDO:
     def findFuzzySimilarityImage(self):
         image = np.pad(self.image,int(self.horizon),mode='symmetric').astype(float)
         similarityPercent = []
-        for iCol in range(int(self.horizon),self.Nx+2):
-            for iRow in range(int(self.horizon),self.Ny+2):
+        for iCol in range(int(self.horizon),self.Nx+int(self.horizon)):
+            for iRow in range(int(self.horizon),self.Ny+int(self.horizon)):
                 pixelDifferences = np.abs(image[iRow,iCol]-image[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]).flatten().astype(int)
                 similarityPercent.append(self.findSimilarityPercent(pixelDifferences))
         self.similarityPercent = np.array(similarityPercent).reshape((self.Nx, self.Ny))
@@ -52,9 +52,11 @@ class fuzzyDiffusionFilterPDDO:
     def solveRHS(self):
         RHS = []
         gradient = self.gradient10 + self.gradient01
+        if int(self.horizon) == 3:
+            gradient = np.pad(gradient, 1, 'constant')
         similarity = np.pad(self.similarityImage, int(self.horizon),'constant')
-        for iCol in range(int(self.horizon),self.Nx+2):
-            for iRow in range(int(self.horizon),self.Ny+2):
+        for iCol in range(int(self.horizon),self.Nx+int(self.horizon)):
+            for iRow in range(int(self.horizon),self.Ny+int(self.horizon)):
                 RHS.append(np.sum(np.multiply(np.multiply(self.GMask,gradient[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1]),similarity[iRow-int(self.horizon):iRow+int(self.horizon)+1,iCol-int(self.horizon):iCol+int(self.horizon)+1])))
         self.RHS = np.transpose(np.array(RHS).reshape((self.Nx,self.Ny)))
 

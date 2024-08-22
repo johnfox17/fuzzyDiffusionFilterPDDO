@@ -1,5 +1,5 @@
 clear all;
-close all;
+% close all;
 
 addpath('../data/simData/')
 
@@ -13,13 +13,6 @@ noisyLena = imread('../data/simData/noisyImageGrayScale.jpg');
 figure; imagesc(noisyLena)
 colormap gray
 figure;histogram(noisyLena)
-
-
-% noisyImage0 = table2array(readtable('../data/output/similarity.csv'));
-% figure; imagesc(noisyImage0)
-% colormap gray
-% colorbar
-% figure;histogram(noisyImage0)
  
 fuzzySimilarityImage0 = table2array(readtable('../data/output/0_fuzzySimilarityImage.csv')); 
 noisyLena0 = table2array(readtable('../data/output/0_denoisedImage.csv'));
@@ -57,8 +50,8 @@ figure; surf(noisyLena0)
 
 
 
-fuzzySimilarityImage1 = table2array(readtable('../data/output/100_fuzzySimilarityImage.csv')); 
-noisyLena1 = table2array(readtable('../data/output/100_denoisedImage.csv'));
+fuzzySimilarityImage1 = table2array(readtable('../data/output/20_fuzzySimilarityImage.csv')); 
+noisyLena1 = table2array(readtable('../data/output/20_denoisedImage.csv'));
 figure; histogram(noisyLena1)
 
 figure;
@@ -94,32 +87,20 @@ figure; surf(noisyLena1)
 
 
 figure;
-tiledlayout(2,2);
+tiledlayout(1,2);
 ax9 = nexttile;
-imagesc(imgaussfilt(noisyLena0,0.6))
+imagesc(imgaussfilt(noisyLena0,0.8))
 title("Denoised Image 0")
 colormap gray;
 colorbar
 
 ax10 = nexttile;
-imagesc(fuzzySimilarityImage0)
-title("Fuzzy Similarity Image 0")
-colormap gray;
-colorbar
-
-ax11 = nexttile;
-imagesc(imgaussfilt(noisyLena1,0.6))
+imagesc(imgaussfilt(noisyLena1,0.8))
 title("Denoised Image 1")
 colormap gray;
 colorbar
 
-ax12 = nexttile;
-imagesc(fuzzySimilarityImage1)
-title("Fuzzy Similarity Image 1")
-colormap gray;
-colorbar
-
-linkaxes([ax9 ax10 ax11 ax12])
+linkaxes([ax9 ax10])
 
 
 figure;
